@@ -18,7 +18,10 @@ export default function AdminDashboardPage() {
   const [medCedula, setMedCedula] = useState("");
   const [medEmail, setMedEmail] = useState("");
   const [medTelefono, setMedTelefono] = useState("");
+<<<<<<< HEAD
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+=======
+>>>>>>> d1cf8116a1337edf64931d819d54627c0a9fe004
 
   const loadData = async () => {
     try {
@@ -59,8 +62,12 @@ export default function AdminDashboardPage() {
         email: medEmail,
         telefono: medTelefono
       });
+<<<<<<< HEAD
       setToastMessage("✅ Médico y su cuenta de acceso creados exitosamente");
       setTimeout(() => setToastMessage(null), 4000);
+=======
+      alert("✅ Médico y su cuenta de acceso creados exitosamente");
+>>>>>>> d1cf8116a1337edf64931d819d54627c0a9fe004
       setMedNombre(""); setMedEspecialidad(""); setMedCedula(""); setMedEmail(""); setMedTelefono("");
       loadData();
     } catch (e: any) {
@@ -237,6 +244,7 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+<<<<<<< HEAD
         {toastMessage && (
           <div className="fixed bottom-10 right-10 bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in zoom-in fade-in slide-in-from-bottom-5 duration-300 z-50">
             <span className="font-semibold">{toastMessage}</span>
@@ -246,6 +254,8 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+=======
+>>>>>>> d1cf8116a1337edf64931d819d54627c0a9fe004
       </main>
     </div>
   );

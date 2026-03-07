@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+<<<<<<< HEAD
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+=======
+>>>>>>> d1cf8116a1337edf64931d819d54627c0a9fe004
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
