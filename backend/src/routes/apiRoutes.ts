@@ -33,6 +33,27 @@ router.delete("/pacientes/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+router.put("/pacientes/:id", async (req, res) => {
+  const pacienteId = Number(req.params.id);
+  const { nombre, fecha_nacimiento, telefono, tipo_sangre, alergias } = req.body;
+  try {
+    const pacienteActualizado = await prisma.paciente.update({
+      where: { id_paciente: pacienteId },
+      data: {
+        nombre,
+        fecha_nacimiento: new Date(fecha_nacimiento),
+        telefono,
+        tipo_sangre,
+        alergias,
+      },
+    });
+    res.json(pacienteActualizado);
+  } catch (error) {
+    console.error("Error ruta PUT /pacientes/:id ->", error);
+    res.status(400).json({ error: "Error al actualizar paciente." });
+  }
+});
+
 // --- MEDICOS ---
 router.get("/medicos", async (req, res) => {
   const medicos = await prisma.medico.findMany();
@@ -94,6 +115,37 @@ router.delete("/medicos/:id", async (req, res) => {
   }
 });
 
+router.put("/medicos/:id", async (req, res) => {
+  const medicoId = Number(req.params.id);
+  const { nombre, especialidad, cedula_profesional, email, telefono } = req.body;
+
+  try {
+    // Buscar medico actual
+    const oldMedico = await prisma.medico.findUnique({
+      where: { id_medico: medicoId }
+    });
+
+    // Actualizar perfil de medico
+    const medicoActualizado = await prisma.medico.update({
+      where: { id_medico: medicoId },
+      data: { nombre, especialidad, cedula_profesional, email, telefono },
+    });
+
+    // Intentar actualizar el usuario asociado si es que el email o nombre cambio
+    if (oldMedico && oldMedico.email && (oldMedico.email !== email || oldMedico.nombre !== nombre)) {
+      await prisma.usuario.updateMany({
+        where: { email: oldMedico.email },
+        data: { email: email, nombre: nombre }
+      }).catch(e => console.error("Error al actualizar usuario asociado", e));
+    }
+
+    res.json(medicoActualizado);
+  } catch (error) {
+    console.error("Error ruta PUT /medicos/:id ->", error);
+    res.status(400).json({ error: "Error al actualizar médico." });
+  }
+});
+
 // --- CITAS ---
 router.get("/citas", async (req, res) => {
   const citas = await prisma.cita.findMany({
@@ -119,6 +171,29 @@ router.post("/citas", async (req, res) => {
 router.delete("/citas/:id", async (req, res) => {
   await prisma.cita.delete({ where: { id_cita: Number(req.params.id) } });
   res.json({ success: true });
+});
+
+router.put("/citas/:id", async (req, res) => {
+  const citaId = Number(req.params.id);
+  const { medico_id, paciente_id, fecha, hora, motivo, estado } = req.body;
+  try {
+    const citaActualizada = await prisma.cita.update({
+      where: { id_cita: citaId },
+      data: {
+        medico_id: Number(medico_id),
+        paciente_id: Number(paciente_id),
+        fecha: new Date(fecha),
+        hora: new Date(hora),
+        motivo,
+        estado,
+      },
+      include: { medico: true, paciente: true },
+    });
+    res.json(citaActualizada);
+  } catch (error) {
+    console.error("Error ruta PUT /citas/:id ->", error);
+    res.status(400).json({ error: "Error al actualizar cita." });
+  }
 });
 
 export default router;
