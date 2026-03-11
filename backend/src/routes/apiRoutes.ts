@@ -5,6 +5,130 @@ import bcrypt from "bcrypt";
 const router = Router();
 const prisma = new PrismaClient();
 
+const MEDICO_ROLE_NAME = "Medico";
+const DEFAULT_MEDICO_ESPECIALIDAD = "General";
+
+const buildGeneratedCedula = (userId: number) => `AUTO-MED-${userId}`;
+
+const deactivateMedicoProfileByEmail = async (email?: string | null) => {
+  if (!email) {
+    return;
+  }
+
+  await prisma.medico.updateMany({
+    where: { email },
+    data: { activo: false },
+  });
+};
+
+const syncMedicoProfiles = async () => {
+  const usuariosMedico = await prisma.usuario.findMany({
+    where: { rol: { nombre: MEDICO_ROLE_NAME } },
+    select: {
+      id_usuario: true,
+      nombre: true,
+      email: true,
+      activo: true,
+    },
+  });
+
+  if (usuariosMedico.length === 0) {
+    return;
+  }
+
+  const medicos = await prisma.medico.findMany({
+    select: {
+      id_medico: true,
+      nombre: true,
+      email: true,
+      activo: true,
+    },
+  });
+
+  const emailsUsuariosMedico = new Set(usuariosMedico.map((usuario) => usuario.email));
+
+  const medicosPorEmail = new Map(
+    medicos.filter((medico) => medico.email).map((medico) => [medico.email as string, medico]),
+  );
+
+  for (const medico of medicos) {
+    if (medico.email && !emailsUsuariosMedico.has(medico.email) && medico.activo) {
+      await prisma.medico.update({
+        where: { id_medico: medico.id_medico },
+        data: { activo: false },
+      });
+    }
+  }
+
+  for (const usuario of usuariosMedico) {
+    const medicoExistente = medicosPorEmail.get(usuario.email);
+
+    if (!medicoExistente) {
+      await prisma.medico.create({
+        data: {
+          nombre: usuario.nombre,
+          especialidad: DEFAULT_MEDICO_ESPECIALIDAD,
+          cedula_profesional: buildGeneratedCedula(usuario.id_usuario),
+          email: usuario.email,
+          activo: usuario.activo,
+        },
+      });
+      continue;
+    }
+
+    if (
+      medicoExistente.nombre !== usuario.nombre ||
+      medicoExistente.activo !== usuario.activo
+    ) {
+      await prisma.medico.update({
+        where: { id_medico: medicoExistente.id_medico },
+        data: {
+          nombre: usuario.nombre,
+          activo: usuario.activo,
+        },
+      });
+    }
+  }
+};
+
+const syncMedicoProfileForUser = async (usuario: {
+  id_usuario: number;
+  nombre: string;
+  email: string;
+  activo: boolean;
+  rol: { nombre: string };
+}) => {
+  if (usuario.rol.nombre !== MEDICO_ROLE_NAME) {
+    return;
+  }
+
+  const medicoExistente = await prisma.medico.findFirst({
+    where: { email: usuario.email },
+  });
+
+  if (!medicoExistente) {
+    await prisma.medico.create({
+      data: {
+        nombre: usuario.nombre,
+        especialidad: DEFAULT_MEDICO_ESPECIALIDAD,
+        cedula_profesional: buildGeneratedCedula(usuario.id_usuario),
+        email: usuario.email,
+        activo: usuario.activo,
+      },
+    });
+    return;
+  }
+
+  await prisma.medico.update({
+    where: { id_medico: medicoExistente.id_medico },
+    data: {
+      nombre: usuario.nombre,
+      email: usuario.email,
+      activo: usuario.activo,
+    },
+  });
+};
+
 // --- PACIENTES ---
 router.get("/pacientes", async (req, res) => {
   const pacientes = await prisma.paciente.findMany();
@@ -56,7 +180,11 @@ router.put("/pacientes/:id", async (req, res) => {
 
 // --- MEDICOS ---
 router.get("/medicos", async (req, res) => {
-  const medicos = await prisma.medico.findMany();
+  await syncMedicoProfiles();
+  const medicos = await prisma.medico.findMany({
+    where: { activo: true },
+    orderBy: { nombre: "asc" },
+  });
   res.json(medicos);
 });
 
@@ -202,6 +330,30 @@ router.get("/roles", async (req, res) => {
   res.json(roles);
 });
 
+router.post("/system-sync", async (req, res) => {
+  try {
+    await syncMedicoProfiles();
+
+    const [usuarios, medicos, citas] = await Promise.all([
+      prisma.usuario.count(),
+      prisma.medico.count({ where: { activo: true } }),
+      prisma.cita.count(),
+    ]);
+
+    res.json({
+      ok: true,
+      resumen: {
+        usuarios,
+        medicos_activos: medicos,
+        citas,
+      },
+    });
+  } catch (error) {
+    console.error("Error ruta POST /system-sync ->", error);
+    res.status(500).json({ error: "No se pudo sincronizar la información del sistema." });
+  }
+});
+
 // --- USUARIOS ---
 router.get("/usuarios", async (req, res) => {
   const usuarios = await prisma.usuario.findMany({
@@ -229,6 +381,7 @@ router.post("/usuarios", async (req, res) => {
       },
       include: { rol: true },
     });
+    await syncMedicoProfileForUser(usuario);
     res.json(usuario);
   } catch (error) {
     console.error("Error ruta POST /usuarios ->", error);
@@ -240,6 +393,10 @@ router.put("/usuarios/:id", async (req, res) => {
   const usuarioId = Number(req.params.id);
   const { nombre, email, password, rol_id, activo } = req.body;
   try {
+    const usuarioAnterior = await prisma.usuario.findUnique({
+      where: { id_usuario: usuarioId },
+      include: { rol: true },
+    });
     const dataToUpdate: any = {
       nombre,
       email,
@@ -255,6 +412,22 @@ router.put("/usuarios/:id", async (req, res) => {
       data: dataToUpdate,
       include: { rol: true },
     });
+
+    if (usuarioAnterior?.rol.nombre === MEDICO_ROLE_NAME && usuarioAnterior.email !== email) {
+      await prisma.medico.updateMany({
+        where: { email: usuarioAnterior.email },
+        data: { email },
+      });
+    }
+
+    if (
+      usuarioAnterior?.rol.nombre === MEDICO_ROLE_NAME &&
+      usuarioActualizado.rol.nombre !== MEDICO_ROLE_NAME
+    ) {
+      await deactivateMedicoProfileByEmail(usuarioAnterior.email);
+    }
+
+    await syncMedicoProfileForUser(usuarioActualizado);
     res.json(usuarioActualizado);
   } catch (error) {
     console.error("Error ruta PUT /usuarios/:id ->", error);
@@ -264,9 +437,19 @@ router.put("/usuarios/:id", async (req, res) => {
 
 router.delete("/usuarios/:id", async (req, res) => {
   try {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id_usuario: Number(req.params.id) },
+      include: { rol: true },
+    });
+
     await prisma.usuario.delete({
       where: { id_usuario: Number(req.params.id) },
     });
+
+    if (usuario?.rol.nombre === MEDICO_ROLE_NAME) {
+      await deactivateMedicoProfileByEmail(usuario.email);
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error("Error ruta DELETE /usuarios/:id ->", error);
