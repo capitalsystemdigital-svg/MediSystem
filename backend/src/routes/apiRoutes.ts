@@ -196,4 +196,83 @@ router.put("/citas/:id", async (req, res) => {
   }
 });
 
+// --- ROLES ---
+router.get("/roles", async (req, res) => {
+  const roles = await prisma.role.findMany();
+  res.json(roles);
+});
+
+// --- USUARIOS ---
+router.get("/usuarios", async (req, res) => {
+  const usuarios = await prisma.usuario.findMany({
+    include: { rol: true },
+    orderBy: { fecha_creacion: "desc" },
+  });
+  res.json(usuarios);
+});
+
+router.post("/usuarios", async (req, res) => {
+  const { nombre, email, password, rol_id, activo } = req.body;
+  try {
+    const usuarioExistente = await prisma.usuario.findUnique({ where: { email } });
+    if (usuarioExistente) {
+      return res.status(400).json({ error: "El correo ya está registrado." });
+    }
+    const hashedPassword = await bcrypt.hash(password || "usuario123", 10);
+    const usuario = await prisma.usuario.create({
+      data: {
+        nombre,
+        email,
+        password: hashedPassword,
+        rol_id: Number(rol_id),
+        activo: activo !== undefined ? Boolean(activo) : true,
+      },
+      include: { rol: true },
+    });
+    res.json(usuario);
+  } catch (error) {
+    console.error("Error ruta POST /usuarios ->", error);
+    res.status(400).json({ error: "Error al crear el usuario." });
+  }
+});
+
+router.put("/usuarios/:id", async (req, res) => {
+  const usuarioId = Number(req.params.id);
+  const { nombre, email, password, rol_id, activo } = req.body;
+  try {
+    const dataToUpdate: any = {
+      nombre,
+      email,
+      rol_id: Number(rol_id),
+      activo: Boolean(activo),
+    };
+    // Solo actualizar password si se envió una nueva
+    if (password && password.trim() !== "") {
+      dataToUpdate.password = await bcrypt.hash(password, 10);
+    }
+    const usuarioActualizado = await prisma.usuario.update({
+      where: { id_usuario: usuarioId },
+      data: dataToUpdate,
+      include: { rol: true },
+    });
+    res.json(usuarioActualizado);
+  } catch (error) {
+    console.error("Error ruta PUT /usuarios/:id ->", error);
+    res.status(400).json({ error: "Error al actualizar el usuario." });
+  }
+});
+
+router.delete("/usuarios/:id", async (req, res) => {
+  try {
+    await prisma.usuario.delete({
+      where: { id_usuario: Number(req.params.id) },
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error ruta DELETE /usuarios/:id ->", error);
+    res.status(500).json({ error: "No se pudo eliminar el usuario." });
+  }
+});
+
 export default router;
+

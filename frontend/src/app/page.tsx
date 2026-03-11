@@ -58,12 +58,10 @@ export default function LoginPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Bienvenido de vuelta</h2>
             <p className="text-gray-500 mb-4">Ingresa tus credenciales para acceder a tu panel.</p>
             
-            {/* Banner Ayuda temporal para el profesor / revisión */}
+            {/* Nota informativa */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md text-sm text-left mb-4">
-              <strong className="text-blue-700 block mb-1">Cuentas DB (Backend Activo):</strong>
-              <span className="block">Admin: <b>admin@medisystem.com</b> | Pass: <b>admin123</b></span>
-              <span className="block mt-1">Médico: <b>medico@medisystem.com</b> | Pass: <b>doctor123</b></span>
-              <span className="block mt-1">Paciente: <b>paciente@medisystem.com</b> | Pass: <b>paciente123</b></span>
+              <strong className="text-blue-700 block mb-1">💡 Acceso al sistema:</strong>
+              <span className="block text-blue-600">Ingresa con el correo y contraseña de tu cuenta. Los usuarios y credenciales son gestionados por el Administrador.</span>
             </div>
 
             {errorMsg && (

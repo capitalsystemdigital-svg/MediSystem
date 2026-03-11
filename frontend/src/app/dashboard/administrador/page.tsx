@@ -1,6 +1,6 @@
 "use client";
 
-import { ActivitySquare, Users, UserRound, CalendarHeart, Settings, LogOut, ArrowUpRight, Activity, Trash, Edit, Search, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ActivitySquare, Users, UserRound, CalendarHeart, LogOut, Activity, Trash, Edit, Search, Plus, X, ChevronLeft, ChevronRight, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -11,6 +11,30 @@ export default function AdminDashboardPage() {
   const [pacientes, setPacientes] = useState<any[]>([]);
   const [citas, setCitas] = useState<any[]>([]);
   const [medicos, setMedicos] = useState<any[]>([]);
+
+  // Current logged-in user info
+  const [userRole, setUserRole] = useState<string>("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Usuarios list & roles
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+
+  // Usuarios search and pagination
+  const [usuarioSearchTerm, setUsuarioSearchTerm] = useState("");
+  const [usuarioCurrentPage, setUsuarioCurrentPage] = useState(1);
+  const usuariosPerPage = 10;
+
+  // Usuarios modal & edit
+  const [isUsuarioModalOpen, setIsUsuarioModalOpen] = useState(false);
+  const [editingUsuarioId, setEditingUsuarioId] = useState<number | null>(null);
+
+  // Usuarios form state
+  const [usrNombre, setUsrNombre] = useState("");
+  const [usrEmail, setUsrEmail] = useState("");
+  const [usrPassword, setUsrPassword] = useState("");
+  const [usrRolId, setUsrRolId] = useState("");
+  const [usrActivo, setUsrActivo] = useState(true);
 
   // Medic form state
   const [medNombre, setMedNombre] = useState("");
@@ -60,20 +84,33 @@ export default function AdminDashboardPage() {
 
   const loadData = async () => {
     try {
-      const [pacRes, citRes, medRes] = await Promise.all([
+      const [pacRes, citRes, medRes, usrRes, rolesRes] = await Promise.all([
         axios.get("http://localhost:4000/api/v1/pacientes"),
         axios.get("http://localhost:4000/api/v1/citas"),
-        axios.get("http://localhost:4000/api/v1/medicos")
+        axios.get("http://localhost:4000/api/v1/medicos"),
+        axios.get("http://localhost:4000/api/v1/usuarios"),
+        axios.get("http://localhost:4000/api/v1/roles"),
       ]);
       setPacientes(pacRes.data);
       setCitas(citRes.data);
       setMedicos(medRes.data);
+      setUsuarios(usrRes.data);
+      setRoles(rolesRes.data);
     } catch (e) {
       console.error(e);
     }
   };
 
   useEffect(() => {
+    // Load user info from localStorage
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const u = JSON.parse(stored);
+        setCurrentUser(u);
+        setUserRole(u.rol || "");
+      }
+    } catch { /* ignore */ }
     loadData();
   }, [activeTab]);
 
@@ -90,6 +127,71 @@ export default function AdminDashboardPage() {
   const resetMedicoForm = () => {
     setMedNombre(""); setMedEspecialidad(""); setMedCedula(""); setMedEmail(""); setMedTelefono("");
     setEditingMedicoId(null);
+  };
+
+  // --- Usuarios helpers ---
+  const filteredUsuarios = usuarios.filter(u =>
+    (u.nombre || "").toLowerCase().includes(usuarioSearchTerm.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(usuarioSearchTerm.toLowerCase()) ||
+    (u.rol?.nombre || "").toLowerCase().includes(usuarioSearchTerm.toLowerCase())
+  );
+  const indexOfLastUsuario = usuarioCurrentPage * usuariosPerPage;
+  const indexOfFirstUsuario = indexOfLastUsuario - usuariosPerPage;
+  const currentUsuarios = filteredUsuarios.slice(indexOfFirstUsuario, indexOfLastUsuario);
+  const totalUsuarioPages = Math.ceil(filteredUsuarios.length / usuariosPerPage);
+
+  const resetUsuarioForm = () => {
+    setUsrNombre(""); setUsrEmail(""); setUsrPassword(""); setUsrRolId(""); setUsrActivo(true);
+    setEditingUsuarioId(null);
+  };
+
+  const openAddUsuarioModal = () => { resetUsuarioForm(); setIsUsuarioModalOpen(true); };
+
+  const openEditUsuarioModal = (u: any) => {
+    setUsrNombre(u.nombre || "");
+    setUsrEmail(u.email || "");
+    setUsrPassword(""); // never pre-fill password
+    setUsrRolId(String(u.rol_id));
+    setUsrActivo(u.activo);
+    setEditingUsuarioId(u.id_usuario);
+    setIsUsuarioModalOpen(true);
+  };
+
+  const closeUsuarioModal = () => { setIsUsuarioModalOpen(false); resetUsuarioForm(); };
+
+  const handleDeleteUsuario = async (id: number) => {
+    if (confirm("¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.")) {
+      try {
+        await axios.delete(`http://localhost:4000/api/v1/usuarios/${id}`);
+        loadData();
+      } catch (e: any) {
+        alert(e.response?.data?.error || "Error al eliminar el usuario.");
+      }
+    }
+  };
+
+  const handleSaveUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingUsuarioId) {
+        await axios.put(`http://localhost:4000/api/v1/usuarios/${editingUsuarioId}`, {
+          nombre: usrNombre, email: usrEmail, password: usrPassword,
+          rol_id: usrRolId, activo: usrActivo,
+        });
+        setToastMessage("✅ Usuario actualizado exitosamente");
+      } else {
+        await axios.post("http://localhost:4000/api/v1/usuarios", {
+          nombre: usrNombre, email: usrEmail, password: usrPassword,
+          rol_id: usrRolId, activo: usrActivo,
+        });
+        setToastMessage("✅ Usuario creado exitosamente");
+      }
+      setTimeout(() => setToastMessage(null), 4000);
+      closeUsuarioModal();
+      loadData();
+    } catch (e: any) {
+      alert(e.response?.data?.error || `Error al ${editingUsuarioId ? 'actualizar' : 'crear'} usuario`);
+    }
   };
 
   const openAddMedicoModal = () => {
@@ -304,6 +406,11 @@ export default function AdminDashboardPage() {
             <button onClick={() => setActiveTab("citas")} className={`w-full flex items-center p-3 rounded-xl transition-all font-semibold ${activeTab === 'citas' ? 'bg-white/10 text-blue-300' : 'hover:bg-white/5 text-slate-400'}`}>
               <CalendarHeart className="h-5 w-5 mr-3" /> Citas (CRUD)
             </button>
+            {userRole === "Administrador" && (
+              <button onClick={() => setActiveTab("usuarios")} className={`w-full flex items-center p-3 rounded-xl transition-all font-semibold ${activeTab === 'usuarios' ? 'bg-white/10 text-blue-300' : 'hover:bg-white/5 text-slate-400'}`}>
+                <Shield className="h-5 w-5 mr-3" /> Gestión de Usuarios
+              </button>
+            )}
           </nav>
         </div>
         <div className="p-6 border-t border-slate-700/50">
@@ -618,6 +725,103 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+        {activeTab === "usuarios" && userRole === "Administrador" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4">
+            {/* Toolbar */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, email o rol..."
+                  value={usuarioSearchTerm}
+                  onChange={(e) => { setUsuarioSearchTerm(e.target.value); setUsuarioCurrentPage(1); }}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                />
+              </div>
+              <button
+                onClick={openAddUsuarioModal}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl flex items-center transition-colors w-full md:w-auto shadow-sm"
+              >
+                <Plus className="mr-2 h-5 w-5" /> Agregar Usuario
+              </button>
+            </div>
+
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 overflow-x-auto">
+              <table className="w-full text-left min-w-[700px]">
+                <thead>
+                  <tr className="border-b-2 text-slate-500 text-sm font-bold uppercase">
+                    <th className="pb-4 px-4">Nombre</th>
+                    <th className="pb-4 px-4">Correo</th>
+                    <th className="pb-4 px-4">Rol</th>
+                    <th className="pb-4 px-4">Estado</th>
+                    <th className="pb-4 px-4">Fecha Registro</th>
+                    <th className="pb-4 px-4 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentUsuarios.map((u) => (
+                    <tr key={u.id_usuario} className="border-b hover:bg-slate-50 transition-colors">
+                      <td className="py-4 px-4 font-bold max-w-[180px] truncate">{u.nombre}</td>
+                      <td className="py-4 px-4 text-sm truncate max-w-[200px]">{u.email}</td>
+                      <td className="py-4 px-4">
+                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                          u.rol?.nombre === "Administrador" ? "bg-indigo-100 text-indigo-700" :
+                          u.rol?.nombre === "Medico" ? "bg-blue-100 text-blue-700" :
+                          "bg-emerald-100 text-emerald-700"
+                        }`}>{u.rol?.nombre || "-"}</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                          u.activo ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                        }`}>{u.activo ? "Activo" : "Inactivo"}</span>
+                      </td>
+                      <td className="py-4 px-4 text-sm">{u.fecha_creacion ? new Date(u.fecha_creacion).toLocaleDateString("es-MX") : "-"}</td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openEditUsuarioModal(u)} className="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded-lg transition-colors" title="Editar">
+                            <Edit size={16} />
+                          </button>
+                          <button onClick={() => handleDeleteUsuario(u.id_usuario)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg transition-colors" title="Eliminar">
+                            <Trash size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {currentUsuarios.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-slate-500">No se encontraron usuarios.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {/* Pagination */}
+              {totalUsuarioPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 border-t pt-6 gap-4">
+                  <p className="text-sm text-slate-500">
+                    Mostrando <span className="font-bold text-slate-900">{indexOfFirstUsuario + 1}</span> a <span className="font-bold text-slate-900">{Math.min(indexOfLastUsuario, filteredUsuarios.length)}</span> de <span className="font-bold text-slate-900">{filteredUsuarios.length}</span> usuarios
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setUsuarioCurrentPage(prev => Math.max(prev - 1, 1))} disabled={usuarioCurrentPage === 1} className="p-2 border border-slate-200 rounded-lg disabled:opacity-50 hover:bg-slate-50 transition-colors">
+                      <ChevronLeft size={20} />
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalUsuarioPages }, (_, i) => i + 1).map(page => (
+                        <button key={page} onClick={() => setUsuarioCurrentPage(page)} className={`w-10 h-10 rounded-lg font-bold transition-colors ${usuarioCurrentPage === page ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50 text-slate-600'}`}>{page}</button>
+                      ))}
+                    </div>
+                    <button onClick={() => setUsuarioCurrentPage(prev => Math.min(prev + 1, totalUsuarioPages))} disabled={usuarioCurrentPage === totalUsuarioPages} className="p-2 border border-slate-200 rounded-lg disabled:opacity-50 hover:bg-slate-50 transition-colors">
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Modal for Add/Edit Medico */}
         {isMedicoModalOpen && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -772,6 +976,75 @@ export default function AdminDashboardPage() {
                   <button type="button" onClick={closePacienteModal} className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
                   <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-sm">
                     {editingPacienteId ? "Guardar Cambios" : "Registrar Paciente"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal for Add/Edit Usuario */}
+        {isUsuarioModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 relative max-h-[90vh] overflow-y-auto">
+              <button onClick={closeUsuarioModal} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors">
+                <X size={24} />
+              </button>
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">
+                {editingUsuarioId ? "✏️ Editar Usuario" : "➕ Crear Nuevo Usuario"}
+              </h2>
+              <form onSubmit={handleSaveUsuario} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
+                    <input required value={usrNombre} onChange={e => setUsrNombre(e.target.value)} className="border border-slate-200 p-3 rounded-xl w-full text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                    <input required type="email" value={usrEmail} onChange={e => setUsrEmail(e.target.value)} className="border border-slate-200 p-3 rounded-xl w-full text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {editingUsuarioId ? "Nueva Contraseña (dejar vacío para no cambiar)" : "Contraseña"}
+                    </label>
+                    <input
+                      type="password"
+                      value={usrPassword}
+                      onChange={e => setUsrPassword(e.target.value)}
+                      required={!editingUsuarioId}
+                      placeholder={editingUsuarioId ? "(sin cambios)" : ""}
+                      className="border border-slate-200 p-3 rounded-xl w-full text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Rol</label>
+                    <select required value={usrRolId} onChange={e => setUsrRolId(e.target.value)} className="border border-slate-200 p-3 rounded-xl w-full text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white">
+                      <option value="">Seleccionar rol...</option>
+                      {roles.map(r => <option key={r.id_rol} value={r.id_rol}>{r.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3 pt-6">
+                    <input
+                      type="checkbox"
+                      id="usrActivo"
+                      checked={usrActivo}
+                      onChange={e => setUsrActivo(e.target.checked)}
+                      className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="usrActivo" className="text-sm font-medium text-slate-700">Usuario activo</label>
+                  </div>
+                </div>
+
+                {!editingUsuarioId && (
+                  <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-100 flex items-center gap-2">
+                    <span>⚠️</span> Si no ingresas una contraseña, se usará <code className="bg-amber-100 px-1 rounded font-bold">usuario123</code> por defecto.
+                  </p>
+                )}
+
+                <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+                  <button type="button" onClick={closeUsuarioModal} className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                  <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-sm">
+                    {editingUsuarioId ? "Guardar Cambios" : "Crear Usuario"}
                   </button>
                 </div>
               </form>

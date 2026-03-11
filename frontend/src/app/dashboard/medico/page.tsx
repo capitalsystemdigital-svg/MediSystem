@@ -10,6 +10,7 @@ export default function MedicoDashboardPage() {
   const [activeTab, setActiveTab] = useState("agenda");
   const [citas, setCitas] = useState<any[]>([]);
   const [pacientes, setPacientes] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const loadData = async () => {
     try {
@@ -25,6 +26,10 @@ export default function MedicoDashboardPage() {
   };
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) setCurrentUser(JSON.parse(stored));
+    } catch { /* ignore */ }
     loadData();
   }, [activeTab]);
 
@@ -70,11 +75,11 @@ export default function MedicoDashboardPage() {
           </div>
           <div className="flex items-center gap-4">
              <div className="text-right hidden sm:block">
-               <p className="text-sm font-bold text-slate-900">Dr. Local</p>
-               <p className="text-xs text-slate-500">medico@medisystem.com</p>
+               <p className="text-sm font-bold text-slate-900">{currentUser?.nombre || "Médico"}</p>
+               <p className="text-xs text-slate-500">{currentUser?.email || ""}</p>
              </div>
              <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-600 border-2 border-white shadow flex items-center justify-center text-white font-bold text-xl">
-                M
+                {(currentUser?.nombre?.[0] || "M").toUpperCase()}
              </div>
           </div>
         </header>
