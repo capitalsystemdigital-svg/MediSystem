@@ -1,6 +1,6 @@
 "use client";
 
-import { ActivitySquare, Users, UserRound, CalendarHeart, LogOut, Activity, Trash, Edit, Search, Plus, X, ChevronLeft, ChevronRight, Shield } from "lucide-react";
+import { ActivitySquare, Users, UserRound, CalendarHeart, LogOut, Activity, Trash, Edit, Search, Plus, X, ChevronLeft, ChevronRight, Shield, Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -11,6 +11,7 @@ export default function AdminDashboardPage() {
   const [pacientes, setPacientes] = useState<any[]>([]);
   const [citas, setCitas] = useState<any[]>([]);
   const [medicos, setMedicos] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Current logged-in user info
   const [userRole, setUserRole] = useState<string>("");
@@ -427,6 +428,40 @@ export default function AdminDashboardPage() {
             <p className="text-slate-500 font-medium">Resumen general y control de base de datos</p>
           </div>
           <div className="flex items-center gap-4">
+             {/* Campana de Notificaciones */}
+             <div className="relative">
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors relative"
+                >
+                  <Bell className="h-6 w-6 text-slate-600" />
+                  <span className="absolute top-2 right-2 h-3 w-3 bg-blue-500 rounded-full border-2 border-white"></span>
+                </button>
+                
+                {showNotifications && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-4 border-b border-slate-50">
+                      <h3 className="font-bold text-slate-900">Notificaciones de Admin</h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-4 hover:bg-slate-50 transition-colors border-b border-slate-50 cursor-pointer">
+                        <p className="text-sm font-bold text-red-600">Alerta de Seguridad</p>
+                        <p className="text-xs text-slate-500">Se detectó un nuevo inicio de sesión desdes CDMX.</p>
+                        <p className="text-[10px] text-slate-400 mt-1">Hace 2 min</p>
+                      </div>
+                      <div className="p-4 hover:bg-slate-50 transition-colors border-b border-slate-50 cursor-pointer">
+                        <p className="text-sm font-bold text-blue-700">Backup Completado</p>
+                        <p className="text-xs text-slate-500">La copia de seguridad diaria se realizó con éxito.</p>
+                        <p className="text-[10px] text-slate-400 mt-1">Hace 4 horas</p>
+                      </div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <button className="text-xs font-bold text-blue-500 hover:text-blue-700">Ver centro de logs</button>
+                    </div>
+                  </div>
+                )}
+             </div>
+
              <div className="text-right hidden sm:block">
                <p className="text-sm font-bold text-slate-900">Admin. Ejecutivo</p>
                <p className="text-xs text-slate-500">admin@medisystem.com</p>
