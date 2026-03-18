@@ -93,7 +93,9 @@ export const register = async (req: Request, res: Response) => {
     // Crear el registro espejo en la tabla pacientes vacía
     await prisma.paciente.create({
       data: {
+        usuario_id: nuevoUsuario.id_usuario,
         nombre,
+        email,
         fecha_nacimiento: new Date("2000-01-01T00:00:00Z"), // Default para llenar luego
       },
     });

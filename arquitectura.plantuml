@@ -1,0 +1,162 @@
+@startuml
+title MediSystem - Arquitectura de Software (Proyecto Completo)
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam defaultFontName Segoe UI
+skinparam backgroundColor #FBFBFD
+
+skinparam rectangle {
+	BackgroundColor #EEF4FF
+	BorderColor #3B5BDB
+}
+
+skinparam database {
+	BackgroundColor #FFF5E6
+	BorderColor #E67700
+}
+
+skinparam cloud {
+	BackgroundColor #F1F3F5
+	BorderColor #868E96
+}
+
+actor "Administrador" as Admin
+actor "Medico" as Med
+actor "Paciente" as Pac
+
+cloud "Navegador Web" as Browser {
+	rectangle "Frontend Web\nNext.js 14 + React + Axios" as Frontend {
+		rectangle "Capa de Presentacion (App Router)" as UI {
+			component "Login\n/" as LoginPage
+			component "Registro\n/register" as RegisterPage
+			component "Dashboard Admin\n/dashboard/administrador" as AdminPage
+			component "Dashboard Medico\n/dashboard/medico" as MedicoPage
+			component "Dashboard Paciente\n/dashboard/paciente" as PacientePage
+		}
+
+		rectangle "Capa de Cliente" as ClientLayer {
+			component "Axios HTTP Client" as Axios
+			component "Estado local + localStorage\n(token, user, rol)" as LocalState
+			component "Enrutamiento por rol" as RoleRouter
+		}
+	}
+}
+
+cloud "API Backend\nNode.js + Express + TypeScript" as Backend {
+	rectangle "Entrada HTTP" as Entry {
+		component "src/index.ts\nExpress App + Middleware" as ExpressApp
+		component "Seguridad y observabilidad\nhelmet, cors, morgan, body-parser" as Middleware
+		component "Healthcheck\nGET /api/health" as Health
+	}
+
+	rectangle "Autenticacion" as AuthModule {
+		component "authRoutes.ts\n/api/auth" as AuthRoutes
+		component "authController.ts\nlogin, register" as AuthController
+		component "JWT + bcrypt" as AuthSecurity
+	}
+
+	rectangle "API de Dominio" as ApiModule {
+		component "apiRoutes.ts\n/api/v1" as ApiRoutes
+		component "Pacientes CRUD" as PacientesAPI
+		component "Medicos CRUD" as MedicosAPI
+		component "Citas CRUD" as CitasAPI
+		component "Usuarios CRUD" as UsuariosAPI
+		component "Roles Query" as RolesAPI
+		component "Sync del sistema\nPOST /api/v1/system-sync" as SyncAPI
+	}
+
+	rectangle "Reglas de negocio" as Biz {
+		component "Sincronizacion Medico-Usuario\n(syncMedicoProfiles, syncMedicoProfileForUser)" as SyncRules
+		component "Generacion de cedula automatica\nAUTO-MED-{id_usuario}" as CedulaRule
+		component "Baja logica de medico\nactivo=false cuando aplica" as SoftDeactivateRule
+	}
+
+	rectangle "Acceso a datos" as DataAccess {
+		component "Prisma Client" as PrismaClient
+		component "Modelo ORM\nRole, Usuario, Medico, Paciente, Cita" as ORMModel
+	}
+}
+
+database "PostgreSQL\nDB: MediSystem\nSchema: public" as Postgres {
+	component "Tabla roles" as TRoles
+	component "Tabla usuarios" as TUsuarios
+	component "Tabla medicos" as TMedicos
+	component "Tabla pacientes" as TPacientes
+	component "Tabla citas" as TCitas
+}
+
+Admin --> Browser
+Med --> Browser
+Pac --> Browser
+
+LoginPage --> Axios
+RegisterPage --> Axios
+AdminPage --> Axios
+MedicoPage --> Axios
+PacientePage --> Axios
+
+UI --> LocalState
+UI --> RoleRouter
+RoleRouter --> LoginPage
+RoleRouter --> AdminPage
+RoleRouter --> MedicoPage
+RoleRouter --> PacientePage
+
+Axios --> ExpressApp : HTTP JSON
+ExpressApp --> Middleware
+ExpressApp --> Health
+
+ExpressApp --> AuthRoutes
+AuthRoutes --> AuthController
+AuthController --> AuthSecurity
+
+ExpressApp --> ApiRoutes
+ApiRoutes --> PacientesAPI
+ApiRoutes --> MedicosAPI
+ApiRoutes --> CitasAPI
+ApiRoutes --> UsuariosAPI
+ApiRoutes --> RolesAPI
+ApiRoutes --> SyncAPI
+
+MedicosAPI --> SyncRules
+UsuariosAPI --> SyncRules
+SyncAPI --> SyncRules
+SyncRules --> CedulaRule
+SyncRules --> SoftDeactivateRule
+
+AuthController --> PrismaClient
+PacientesAPI --> PrismaClient
+MedicosAPI --> PrismaClient
+CitasAPI --> PrismaClient
+UsuariosAPI --> PrismaClient
+RolesAPI --> PrismaClient
+SyncRules --> PrismaClient
+
+PrismaClient --> ORMModel
+ORMModel --> Postgres
+
+Postgres --> TRoles
+Postgres --> TUsuarios
+Postgres --> TMedicos
+Postgres --> TPacientes
+Postgres --> TCitas
+
+note right of AuthController
+Flujo de login:
+1) Busca usuario por email
+2) Verifica usuario.activo
+3) Compara password con bcrypt
+4) Emite JWT con id y rol
+5) Frontend redirige por rol
+end note
+
+note bottom of SyncRules
+Objetivo: mantener coherencia entre
+usuarios con rol "Medico" y perfiles
+de tabla medicos que consume la UI.
+end note
+
+@enduml

@@ -1,12 +1,52 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const router = Router();
 const prisma = new PrismaClient();
 
 const MEDICO_ROLE_NAME = "Medico";
+const PACIENTE_ROLE_NAME = "Paciente";
 const DEFAULT_MEDICO_ESPECIALIDAD = "General";
+const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro";
+
+type AuthContext = {
+  id_usuario: number;
+  email: string;
+  rol: string;
+};
+
+const getAuthContext = async (authHeader?: string): Promise<AuthContext | null> => {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.replace("Bearer ", "").trim();
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+    const usuario = await prisma.usuario.findUnique({
+      where: { id_usuario: decoded.id },
+      include: { rol: true },
+    });
+
+    if (!usuario || !usuario.activo) {
+      return null;
+    }
+
+    return {
+      id_usuario: usuario.id_usuario,
+      email: usuario.email,
+      rol: usuario.rol.nombre,
+    };
+  } catch {
+    return null;
+  }
+};
 
 const buildGeneratedCedula = (userId: number) => `AUTO-MED-${userId}`;
 
@@ -122,6 +162,47 @@ const syncMedicoProfileForUser = async (usuario: {
   await prisma.medico.update({
     where: { id_medico: medicoExistente.id_medico },
     data: {
+      nombre: usuario.nombre,
+      email: usuario.email,
+      activo: usuario.activo,
+    },
+  });
+};
+
+const syncPacienteProfileForUser = async (usuario: {
+  id_usuario: number;
+  nombre: string;
+  email: string;
+  activo: boolean;
+  rol: { nombre: string };
+}) => {
+  if (usuario.rol.nombre !== PACIENTE_ROLE_NAME) {
+    return;
+  }
+
+  const pacienteExistente = await prisma.paciente.findFirst({
+    where: {
+      OR: [{ usuario_id: usuario.id_usuario }, { email: usuario.email }],
+    },
+  });
+
+  if (!pacienteExistente) {
+    await prisma.paciente.create({
+      data: {
+        usuario_id: usuario.id_usuario,
+        nombre: usuario.nombre,
+        email: usuario.email,
+        fecha_nacimiento: new Date("2000-01-01T00:00:00Z"),
+        activo: usuario.activo,
+      },
+    });
+    return;
+  }
+
+  await prisma.paciente.update({
+    where: { id_paciente: pacienteExistente.id_paciente },
+    data: {
+      usuario_id: usuario.id_usuario,
       nombre: usuario.nombre,
       email: usuario.email,
       activo: usuario.activo,
@@ -324,6 +405,139 @@ router.put("/citas/:id", async (req, res) => {
   }
 });
 
+// --- EXPEDIENTES ---
+router.get("/expedientes", async (req, res) => {
+  const auth = await getAuthContext(req.headers.authorization);
+
+  if (!auth) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+
+  try {
+    if (auth.rol === PACIENTE_ROLE_NAME) {
+      const paciente = await prisma.paciente.findFirst({
+        where: { usuario_id: auth.id_usuario },
+      });
+
+      if (!paciente) {
+        return res.json([]);
+      }
+
+      const expedientes = await prisma.expediente.findMany({
+        where: { paciente_id: paciente.id_paciente },
+        include: { medico: true, paciente: true },
+        orderBy: { fecha_actualizacion: "desc" },
+      });
+
+      return res.json(expedientes);
+    }
+
+    if (auth.rol === MEDICO_ROLE_NAME) {
+      const expedientes = await prisma.expediente.findMany({
+        include: { medico: true, paciente: true },
+        orderBy: { fecha_actualizacion: "desc" },
+      });
+
+      return res.json(expedientes);
+    }
+
+    return res.status(403).json({ error: "Rol sin permisos para consultar expedientes" });
+  } catch (error) {
+    console.error("Error ruta GET /expedientes ->", error);
+    return res.status(500).json({ error: "No se pudieron obtener los expedientes" });
+  }
+});
+
+router.post("/expedientes", async (req, res) => {
+  const auth = await getAuthContext(req.headers.authorization);
+
+  if (!auth) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+
+  if (auth.rol !== MEDICO_ROLE_NAME) {
+    return res.status(403).json({ error: "Solo los médicos pueden crear expedientes" });
+  }
+
+  try {
+    const medico = await prisma.medico.findFirst({ where: { email: auth.email, activo: true } });
+    if (!medico) {
+      return res.status(403).json({ error: "No se encontró el perfil médico asociado" });
+    }
+
+    const { paciente_id, diagnostico, tratamiento, notas } = req.body;
+    if (!paciente_id || !diagnostico) {
+      return res.status(400).json({ error: "paciente_id y diagnostico son obligatorios" });
+    }
+
+    const expediente = await prisma.expediente.create({
+      data: {
+        paciente_id: Number(paciente_id),
+        medico_id: medico.id_medico,
+        diagnostico,
+        tratamiento,
+        notas,
+      },
+      include: { medico: true, paciente: true },
+    });
+
+    return res.status(201).json(expediente);
+  } catch (error) {
+    console.error("Error ruta POST /expedientes ->", error);
+    return res.status(400).json({ error: "No se pudo crear el expediente" });
+  }
+});
+
+router.put("/expedientes/:id", async (req, res) => {
+  const auth = await getAuthContext(req.headers.authorization);
+
+  if (!auth) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+
+  if (auth.rol !== MEDICO_ROLE_NAME) {
+    return res.status(403).json({ error: "Solo los médicos pueden modificar expedientes" });
+  }
+
+  try {
+    const expedienteId = Number(req.params.id);
+    const medico = await prisma.medico.findFirst({ where: { email: auth.email, activo: true } });
+
+    if (!medico) {
+      return res.status(403).json({ error: "No se encontró el perfil médico asociado" });
+    }
+
+    const expedienteExistente = await prisma.expediente.findUnique({
+      where: { id_expediente: expedienteId },
+    });
+
+    if (!expedienteExistente) {
+      return res.status(404).json({ error: "Expediente no encontrado" });
+    }
+
+    if (expedienteExistente.medico_id !== medico.id_medico) {
+      return res.status(403).json({ error: "Solo puedes editar expedientes creados por ti" });
+    }
+
+    const { diagnostico, tratamiento, notas } = req.body;
+
+    const expedienteActualizado = await prisma.expediente.update({
+      where: { id_expediente: expedienteId },
+      data: {
+        diagnostico,
+        tratamiento,
+        notas,
+      },
+      include: { medico: true, paciente: true },
+    });
+
+    return res.json(expedienteActualizado);
+  } catch (error) {
+    console.error("Error ruta PUT /expedientes/:id ->", error);
+    return res.status(400).json({ error: "No se pudo actualizar el expediente" });
+  }
+});
+
 // --- ROLES ---
 router.get("/roles", async (req, res) => {
   const roles = await prisma.role.findMany();
@@ -382,6 +596,7 @@ router.post("/usuarios", async (req, res) => {
       include: { rol: true },
     });
     await syncMedicoProfileForUser(usuario);
+    await syncPacienteProfileForUser(usuario);
     res.json(usuario);
   } catch (error) {
     console.error("Error ruta POST /usuarios ->", error);
@@ -428,6 +643,7 @@ router.put("/usuarios/:id", async (req, res) => {
     }
 
     await syncMedicoProfileForUser(usuarioActualizado);
+    await syncPacienteProfileForUser(usuarioActualizado);
     res.json(usuarioActualizado);
   } catch (error) {
     console.error("Error ruta PUT /usuarios/:id ->", error);

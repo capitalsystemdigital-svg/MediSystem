@@ -1,8 +1,8 @@
 "use client";
 
-import { ActivitySquare, CalendarHeart, FileText, Settings, LogOut, Clock, CalendarDays, KeySquare, PlusCircle, Bell } from "lucide-react";
+import { ActivitySquare, CalendarHeart, FileText, LogOut, CalendarDays, PlusCircle, Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 
 export default function PacienteDashboardPage() {
@@ -10,29 +10,44 @@ export default function PacienteDashboardPage() {
   const [activeTab, setActiveTab] = useState("citas");
   const [citasDelPaciente, setCitas] = useState<any[]>([]);
   const [medicos, setMedicos] = useState<any[]>([]);
+  const [expedientes, setExpedientes] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Formularios de reserva de cita
   const [motivo, setMotivo] = useState("");
   const [fecha, setFecha] = useState("");
   const [medicoSeleccionado, setMedico] = useState("");
 
-  const loadData = async () => {
+  const getAuthHeaders = useCallback(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, []);
+
+  const loadData = useCallback(async () => {
     try {
-      const [citRes, medRes] = await Promise.all([
+      const [citRes, medRes, expRes] = await Promise.all([
         axios.get("http://localhost:4000/api/v1/citas"),
-        axios.get("http://localhost:4000/api/v1/medicos")
+        axios.get("http://localhost:4000/api/v1/medicos"),
+        axios.get("http://localhost:4000/api/v1/expedientes", { headers: getAuthHeaders() })
       ]);
       setCitas(citRes.data);
       setMedicos(medRes.data);
+      setExpedientes(expRes.data);
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [getAuthHeaders]);
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) setCurrentUser(JSON.parse(stored));
+    } catch {
+      // ignore invalid local storage
+    }
     loadData();
-  }, [activeTab]);
+  }, [activeTab, loadData]);
 
   const handleAgendar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +87,9 @@ export default function PacienteDashboardPage() {
             </button>
             <button onClick={() => setActiveTab("agendar")} className={`w-full flex items-center p-3 rounded-xl transition-all font-semibold ${activeTab === 'agendar' ? 'bg-white/10 text-indigo-300' : 'hover:bg-white/5 text-slate-400'}`}>
                <PlusCircle className="h-5 w-5 mr-3" /> Solicitar Cita
+            </button>
+            <button onClick={() => setActiveTab("expediente")} className={`w-full flex items-center p-3 rounded-xl transition-all font-semibold ${activeTab === 'expediente' ? 'bg-white/10 text-indigo-300' : 'hover:bg-white/5 text-slate-400'}`}>
+              <FileText className="h-5 w-5 mr-3" /> Mi Expediente
             </button>
           </nav>
         </div>
@@ -128,11 +146,11 @@ export default function PacienteDashboardPage() {
              </div>
 
              <div className="text-right hidden sm:block">
-               <p className="text-sm font-bold text-slate-900">Paciente Local</p>
-               <p className="text-xs text-slate-500">MediSystem Cloud</p>
+              <p className="text-sm font-bold text-slate-900">{currentUser?.nombre || "Paciente"}</p>
+              <p className="text-xs text-slate-500">{currentUser?.email || "MediSystem Cloud"}</p>
              </div>
              <div className="h-12 w-12 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 border-2 border-white shadow flex items-center justify-center text-white font-bold text-xl">
-                PL
+               {(currentUser?.nombre?.[0] || "P").toUpperCase()}
              </div>
           </div>
         </header>
@@ -225,6 +243,37 @@ export default function PacienteDashboardPage() {
                 </div>
              </form>
            </div>
+        )}
+
+        {activeTab === "expediente" && (
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 animate-in fade-in zoom-in duration-300">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+              <FileText className="mr-3 text-indigo-500" /> Mi Historial de Expedientes
+            </h2>
+            {expedientes.length === 0 ? (
+              <p className="text-slate-500">Aún no tienes expedientes médicos registrados.</p>
+            ) : (
+              <div className="space-y-4">
+                {expedientes.map((exp) => (
+                  <article key={exp.id_expediente} className="border border-slate-200 rounded-xl p-5 bg-slate-50">
+                    <p className="text-xs text-slate-500">Médico responsable</p>
+                    <h3 className="text-lg font-bold text-slate-900 mb-3">{exp.medico?.nombre || "No asignado"}</h3>
+
+                    <p className="text-xs text-slate-500">Diagnóstico</p>
+                    <p className="text-slate-700 mb-3">{exp.diagnostico}</p>
+
+                    <p className="text-xs text-slate-500">Tratamiento</p>
+                    <p className="text-slate-700 mb-3">{exp.tratamiento || "Sin tratamiento registrado"}</p>
+
+                    <p className="text-xs text-slate-500">Notas</p>
+                    <p className="text-slate-700 mb-3">{exp.notas || "Sin notas"}</p>
+
+                    <p className="text-xs text-slate-400">Última actualización: {new Date(exp.fecha_actualizacion).toLocaleString()}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>

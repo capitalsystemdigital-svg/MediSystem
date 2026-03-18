@@ -1,8 +1,8 @@
 "use client";
 
-import { ActivitySquare, Users, CalendarHeart, Settings, LogOut, Clock, CalendarDays, KeySquare, Stethoscope, Search, Bell } from "lucide-react";
+import { ActivitySquare, Users, CalendarHeart, LogOut, Stethoscope, Search, Bell, FileText, Pencil, Eye, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 
 export default function MedicoDashboardPage() {
@@ -10,20 +10,80 @@ export default function MedicoDashboardPage() {
   const [activeTab, setActiveTab] = useState("agenda");
   const [citas, setCitas] = useState<any[]>([]);
   const [pacientes, setPacientes] = useState<any[]>([]);
+  const [expedientes, setExpedientes] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [pacienteExpedienteId, setPacienteExpedienteId] = useState("");
+  const [diagnostico, setDiagnostico] = useState("");
+  const [tratamiento, setTratamiento] = useState("");
+  const [notas, setNotas] = useState("");
+  const [editingExpedienteId, setEditingExpedienteId] = useState<number | null>(null);
+  const [pacienteModal, setPacienteModal] = useState<any | null>(null);
 
-  const loadData = async () => {
+  const getAuthHeaders = useCallback(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, []);
+
+  const loadData = useCallback(async () => {
     try {
-      const [citRes, pacRes] = await Promise.all([
+      const [citRes, pacRes, expRes] = await Promise.all([
         axios.get("http://localhost:4000/api/v1/citas"),
-        axios.get("http://localhost:4000/api/v1/pacientes")
+        axios.get("http://localhost:4000/api/v1/pacientes"),
+        axios.get("http://localhost:4000/api/v1/expedientes", { headers: getAuthHeaders() })
       ]);
       setCitas(citRes.data);
       setPacientes(pacRes.data);
+      setExpedientes(expRes.data);
     } catch (e) {
       console.error(e);
     }
+  }, [getAuthHeaders]);
+
+  const cleanExpedienteForm = () => {
+    setPacienteExpedienteId("");
+    setDiagnostico("");
+    setTratamiento("");
+    setNotas("");
+    setEditingExpedienteId(null);
+  };
+
+  const handleGuardarExpediente = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        paciente_id: Number(pacienteExpedienteId),
+        diagnostico,
+        tratamiento,
+        notas,
+      };
+
+      if (editingExpedienteId) {
+        await axios.put(`http://localhost:4000/api/v1/expedientes/${editingExpedienteId}`, payload, {
+          headers: getAuthHeaders(),
+        });
+        alert("Expediente actualizado correctamente");
+      } else {
+        await axios.post("http://localhost:4000/api/v1/expedientes", payload, {
+          headers: getAuthHeaders(),
+        });
+        alert("Expediente creado correctamente");
+      }
+
+      cleanExpedienteForm();
+      await loadData();
+    } catch (error: any) {
+      alert(error?.response?.data?.error || "No se pudo guardar el expediente");
+    }
+  };
+
+  const prepareEditExpediente = (expediente: any) => {
+    setEditingExpedienteId(expediente.id_expediente);
+    setPacienteExpedienteId(String(expediente.paciente_id));
+    setDiagnostico(expediente.diagnostico || "");
+    setTratamiento(expediente.tratamiento || "");
+    setNotas(expediente.notas || "");
+    setActiveTab("expedientes");
   };
 
   useEffect(() => {
@@ -32,7 +92,7 @@ export default function MedicoDashboardPage() {
       if (stored) setCurrentUser(JSON.parse(stored));
     } catch { /* ignore */ }
     loadData();
-  }, [activeTab]);
+  }, [activeTab, loadData]);
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-800">
@@ -54,6 +114,9 @@ export default function MedicoDashboardPage() {
             </button>
             <button onClick={() => setActiveTab("pacientes")} className={`w-full flex items-center p-3 rounded-xl transition-all font-semibold ${activeTab === 'pacientes' ? 'bg-white/10 text-emerald-300' : 'hover:bg-white/5 text-slate-400'}`}>
                <Users className="h-5 w-5 mr-3" /> Base de Pacientes
+            </button>
+            <button onClick={() => setActiveTab("expedientes")} className={`w-full flex items-center p-3 rounded-xl transition-all font-semibold ${activeTab === 'expedientes' ? 'bg-white/10 text-emerald-300' : 'hover:bg-white/5 text-slate-400'}`}>
+              <FileText className="h-5 w-5 mr-3" /> Expedientes
             </button>
           </nav>
         </div>
@@ -165,7 +228,18 @@ export default function MedicoDashboardPage() {
                           <td className="py-4 px-4 text-slate-800">{cita.paciente?.nombre}</td>
                           <td className="py-4 px-4 text-slate-500 text-sm">{cita.motivo}</td>
                           <td className="py-4 px-4">
-                             <span className="text-slate-400 text-xs italic">Sin acciones</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const pac = pacientes.find((p) => p.id_paciente === cita.paciente_id) || cita.paciente;
+                                const exps = expedientes.filter((e) => e.paciente_id === cita.paciente_id);
+                                setPacienteModal({ ...pac, expedientes: exps });
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors"
+                              title="Ver expediente del paciente"
+                            >
+                              <Eye className="h-4 w-4" /> Ver expediente
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -181,21 +255,205 @@ export default function MedicoDashboardPage() {
              <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center"><Search className="mr-2" /> Directorio Médico de Pacientes</h2>
              
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pacientes.map((p) => (
-                  <div key={p.id_paciente} className="border border-slate-200 rounded-xl p-6 bg-slate-50 hover:bg-indigo-50 transition-colors cursor-pointer">
-                    <h3 className="font-bold text-lg text-indigo-900">{p.nombre}</h3>
-                    <div className="mt-2 text-sm text-slate-600">
-                      <p><strong>Tel:</strong> {p.telefono || "S/N"}</p>
-                      <p><strong>Nacimiento:</strong> {new Date(p.fecha_nacimiento).toLocaleDateString()}</p>
-                      <p><strong>Alergias:</strong> {p.alergias || "Ninguna registrada"}</p>
+                {pacientes.map((p) => {
+                  const expsPaciente = expedientes.filter((e) => e.paciente_id === p.id_paciente);
+                  return (
+                    <div key={p.id_paciente} className="border border-slate-200 rounded-xl p-6 bg-slate-50 flex flex-col gap-3">
+                      <div>
+                        <h3 className="font-bold text-lg text-indigo-900">{p.nombre}</h3>
+                        <div className="mt-2 text-sm text-slate-600">
+                          <p><strong>Tel:</strong> {p.telefono || "S/N"}</p>
+                          <p><strong>Nacimiento:</strong> {new Date(p.fecha_nacimiento).toLocaleDateString()}</p>
+                          <p><strong>Alergias:</strong> {p.alergias || "Ninguna registrada"}</p>
+                        </div>
+                      </div>
+
+                      {expsPaciente.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">Sin expedientes registrados aún</p>
+                      ) : (
+                        <p className="text-xs text-emerald-600 font-semibold">{expsPaciente.length} expediente{expsPaciente.length > 1 ? "s" : ""} registrado{expsPaciente.length > 1 ? "s" : ""}</p>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPacienteExpedienteId(String(p.id_paciente));
+                          setActiveTab("expedientes");
+                        }}
+                        className="mt-auto inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                      >
+                        <FileText className="h-4 w-4" /> Ver expedientes
+                      </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
              </div>
           </div>
         )}
 
+        {activeTab === "expedientes" && (
+          <div className="space-y-8 animate-in fade-in zoom-in duration-300">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900 mb-6">{editingExpedienteId ? "Editar Expediente" : "Crear Expediente"}</h2>
+              <form onSubmit={handleGuardarExpediente} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Paciente</label>
+                  <select
+                    required
+                    value={pacienteExpedienteId}
+                    onChange={(e) => setPacienteExpedienteId(e.target.value)}
+                    disabled={Boolean(editingExpedienteId)}
+                    className="w-full border-2 border-slate-200 p-3 rounded-lg text-black"
+                  >
+                    <option value="" disabled>Selecciona un paciente</option>
+                    {pacientes.map((p) => (
+                      <option key={p.id_paciente} value={p.id_paciente}>{p.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Diagnóstico</label>
+                  <textarea
+                    required
+                    value={diagnostico}
+                    onChange={(e) => setDiagnostico(e.target.value)}
+                    className="w-full border-2 border-slate-200 p-3 rounded-lg text-black h-24"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Tratamiento</label>
+                  <textarea
+                    value={tratamiento}
+                    onChange={(e) => setTratamiento(e.target.value)}
+                    className="w-full border-2 border-slate-200 p-3 rounded-lg text-black h-24"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Notas</label>
+                  <textarea
+                    value={notas}
+                    onChange={(e) => setNotas(e.target.value)}
+                    className="w-full border-2 border-slate-200 p-3 rounded-lg text-black h-24"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex gap-3 justify-end">
+                  {editingExpedienteId && (
+                    <button
+                      type="button"
+                      onClick={cleanExpedienteForm}
+                      className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold"
+                    >
+                      Cancelar edición
+                    </button>
+                  )}
+                  <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg font-semibold">
+                    {editingExpedienteId ? "Guardar cambios" : "Crear expediente"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900 mb-6">Expedientes Registrados</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {expedientes.map((exp) => (
+                  <article key={exp.id_expediente} className="border border-slate-200 rounded-xl p-5 bg-slate-50">
+                    <p className="text-sm text-slate-500">Paciente</p>
+                    <h3 className="font-bold text-slate-900 mb-3">{exp.paciente?.nombre}</h3>
+                    <p className="text-sm text-slate-500">Diagnóstico</p>
+                    <p className="text-slate-700 mb-3">{exp.diagnostico}</p>
+                    <p className="text-sm text-slate-500">Tratamiento</p>
+                    <p className="text-slate-700 mb-3">{exp.tratamiento || "Sin tratamiento registrado"}</p>
+                    <p className="text-xs text-slate-400 mb-4">Actualizado: {new Date(exp.fecha_actualizacion).toLocaleString()}</p>
+                    <button
+                      type="button"
+                      onClick={() => prepareEditExpediente(exp)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold"
+                    >
+                      <Pencil className="h-4 w-4" /> Editar
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
+
+      {/* Modal de expediente del paciente */}
+      {pacienteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-900">Expediente de {pacienteModal.nombre}</h2>
+              <button onClick={() => setPacienteModal(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <X className="h-5 w-5 text-slate-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Datos del paciente */}
+              <section>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Datos del Paciente</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="text-slate-500">Teléfono:</span></div>
+                  <div className="font-medium text-slate-800">{pacienteModal.telefono || "S/N"}</div>
+                  <div><span className="text-slate-500">Nacimiento:</span></div>
+                  <div className="font-medium text-slate-800">{pacienteModal.fecha_nacimiento ? new Date(pacienteModal.fecha_nacimiento).toLocaleDateString() : "S/N"}</div>
+                  <div><span className="text-slate-500">Tipo de sangre:</span></div>
+                  <div className="font-medium text-slate-800">{pacienteModal.tipo_sangre || "No registrado"}</div>
+                  <div><span className="text-slate-500">Alergias:</span></div>
+                  <div className="font-medium text-slate-800">{pacienteModal.alergias || "Ninguna registrada"}</div>
+                </div>
+              </section>
+
+              {/* Expedientes */}
+              <section>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Historial de Expedientes</h3>
+                {pacienteModal.expedientes?.length === 0 ? (
+                  <p className="text-sm text-slate-400 italic">Este paciente aún no tiene expedientes registrados.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {pacienteModal.expedientes?.map((exp: any) => (
+                      <article key={exp.id_expediente} className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+                        <p className="text-xs text-slate-400 mb-1">Diagnóstico</p>
+                        <p className="text-sm font-semibold text-slate-800 mb-2">{exp.diagnostico}</p>
+                        <p className="text-xs text-slate-400 mb-1">Tratamiento</p>
+                        <p className="text-sm text-slate-700 mb-2">{exp.tratamiento || "Sin tratamiento registrado"}</p>
+                        <p className="text-xs text-slate-400 mb-1">Notas</p>
+                        <p className="text-sm text-slate-700 mb-2">{exp.notas || "Sin notas"}</p>
+                        <p className="text-xs text-slate-400">Actualizado: {new Date(exp.fecha_actualizacion).toLocaleString()}</p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div className="p-6 pt-0 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setPacienteExpedienteId(String(pacienteModal.id_paciente));
+                  setPacienteModal(null);
+                  setActiveTab("expedientes");
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold"
+              >
+                <FileText className="h-4 w-4" /> Crear / Editar expediente
+              </button>
+              <button onClick={() => setPacienteModal(null)} className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
