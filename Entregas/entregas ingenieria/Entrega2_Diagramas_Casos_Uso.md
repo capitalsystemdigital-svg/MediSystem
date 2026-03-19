@@ -1,210 +1,337 @@
 # 2.5 Diagramas de Casos de Uso - MediSystem
 
-## Diagrama UML de Casos de Uso General (Visión de Alto Nivel)
+## Diagrama UML de Casos de Uso - Sistema MediSystem
 
 ```plantuml
-@startuml MediSystem_UseCases
+@startuml MediSystem_Complete_UseCases
 !theme plain
 skinparam linetype ortho
 skinparam packageStyle rectangle
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 14
+skinparam defaultFontSize 12
 skinparam defaultFontName Arial
-skinparam backgroundColor<<system>> #FFF5E6
 
-actor "👨‍💼 Administrador" as Admin
-actor "👨‍⚕️ Médico" as Med
-actor "👤 Paciente" as Pac
+actor "Administrador" as Admin
+actor "Medico" as Med
+actor "Paciente" as Pac
 
-rectangle "🔐 Autenticación" as Auth {
-  usecase "Iniciar Sesión" as UC_LOGIN
-  usecase "Registrarse" as UC_REGISTER
+rectangle "Gestion de Usuarios" as US {
+  usecase "Registrar Usuario" as UC_CREAR_USR
+  usecase "Validar Datos Usuario" as UC_VALIDAR_USR
+  usecase "Guardar Usuario" as UC_GUARDAR_USR
+  usecase "Consultar Usuarios" as UC_LISTAR_USR
+  usecase "Actualizar Usuario" as UC_ACTUALIZAR_USR
+  usecase "Inactivar Usuario" as UC_INACTIVAR_USR
+  
+  UC_CREAR_USR ..> UC_VALIDAR_USR : <<include>>
+  UC_CREAR_USR ..> UC_GUARDAR_USR : <<include>>
 }
 
-rectangle "👥 Usuarios" as Users {
-  usecase "Crear/Editar Usuario" as UC_CRUD_USR
+rectangle "Autenticacion" as AUTH {
+  usecase "Iniciar Sesion" as UC_LOGIN
+  usecase "Validar Credenciales" as UC_VALIDAR_CRED
+  usecase "Generar JWT" as UC_GENERAR_JWT
+  usecase "Cerrar Sesion" as UC_LOGOUT
+  
+  UC_LOGIN ..> UC_VALIDAR_CRED : <<include>>
+  UC_LOGIN ..> UC_GENERAR_JWT : <<include>>
 }
 
-rectangle "⚕️ Médicos" as Docs {
-  usecase "Crear/Editar Médico" as UC_CRUD_MED
+rectangle "Gestion de Medicos" as MED_SEC {
+  usecase "Crear Medico" as UC_CREAR_MED
+  usecase "Validar Cedula Unica" as UC_VALIDAR_CEDULA
+  usecase "Sincronizar Usuario Medico" as UC_SYNC_MED
+  usecase "Consultar Medicos" as UC_LISTAR_MED
+  usecase "Actualizar Medico" as UC_ACTUALIZAR_MED
+  usecase "Inactivar Medico" as UC_INACTIVAR_MED
+  
+  UC_CREAR_MED ..> UC_VALIDAR_CEDULA : <<include>>
+  UC_CREAR_MED ..> UC_SYNC_MED : <<include>>
 }
 
-rectangle "📋 Pacientes" as Pats {
-  usecase "Crear/Editar Paciente" as UC_CRUD_PAC
+rectangle "Gestion de Pacientes" as PAC_SEC {
+  usecase "Crear Paciente" as UC_CREAR_PAC
+  usecase "Sincronizar Usuario Paciente" as UC_SYNC_PAC
+  usecase "Consultar Pacientes" as UC_LISTAR_PAC
+  usecase "Actualizar Paciente" as UC_ACTUALIZAR_PAC
+  usecase "Inactivar Paciente" as UC_INACTIVAR_PAC
+  
+  UC_CREAR_PAC ..> UC_SYNC_PAC : <<include>>
 }
 
-rectangle "📅 Citas" as Appts {
-  usecase "Gestionar Citas" as UC_CRUD_CIT
+rectangle "Gestion de Citas" as CITA_SEC {
+  usecase "Crear Cita" as UC_CREAR_CIT
+  usecase "Validar Disponibilidad" as UC_VALIDAR_CIT
+  usecase "Consultar Citas" as UC_LISTAR_CIT
+  usecase "Actualizar Estado Cita" as UC_ACTUALIZAR_CIT
+  usecase "Eliminar Cita" as UC_ELIMINAR_CIT
+  usecase "Ver Mi Agenda" as UC_MI_AGENDA
+  
+  UC_CREAR_CIT ..> UC_VALIDAR_CIT : <<include>>
 }
 
-Admin -down-> UC_LOGIN
-Med -down-> UC_LOGIN
-Pac -down-> UC_REGISTER
+rectangle "Sistema" as SYS {
+  usecase "Sincronizar Sistema" as UC_SYNC_SYS
+  usecase "Health Check" as UC_HEALTH
+}
 
-Admin -down-> UC_CRUD_USR
-Admin -down-> UC_CRUD_MED
-Admin -down-> UC_CRUD_PAC
-Admin -down-> UC_CRUD_CIT
+' Relaciones Administrador
+Admin --> UC_CREAR_USR
+Admin --> UC_LISTAR_USR
+Admin --> UC_ACTUALIZAR_USR
+Admin --> UC_INACTIVAR_USR
 
-Med -down-> UC_CRUD_CIT
-Pac -down-> UC_CRUD_CIT
+Admin --> UC_LOGIN
+Admin --> UC_LOGOUT
+
+Admin --> UC_CREAR_MED
+Admin --> UC_LISTAR_MED
+Admin --> UC_ACTUALIZAR_MED
+Admin --> UC_INACTIVAR_MED
+
+Admin --> UC_CREAR_PAC
+Admin --> UC_LISTAR_PAC
+Admin --> UC_ACTUALIZAR_PAC
+Admin --> UC_INACTIVAR_PAC
+
+Admin --> UC_CREAR_CIT
+Admin --> UC_LISTAR_CIT
+Admin --> UC_ACTUALIZAR_CIT
+Admin --> UC_ELIMINAR_CIT
+
+Admin --> UC_SYNC_SYS
+Admin --> UC_HEALTH
+
+' Relaciones Medico
+Med --> UC_LOGIN
+Med --> UC_LOGOUT
+Med --> UC_MI_AGENDA
+Med --> UC_LISTAR_CIT
+Med --> UC_ACTUALIZAR_CIT
+Med --> UC_LISTAR_PAC
+
+' Relaciones Paciente
+Pac --> UC_LOGIN
+Pac --> UC_LOGOUT
+Pac --> UC_CREAR_PAC
+Pac --> UC_LISTAR_CIT
 
 @enduml
 ```
 
 ---
 
-### Visión Detallada por Módulo
-
-#### A) Casos de Uso - Autenticación
+## Diagrama Detallado: Gestion de Usuarios (Admin)
 
 ```plantuml
-@startuml Auth_UseCases
+@startuml Admin_Usuarios_Detailed
 !theme plain
-skinparam defaultFontSize 13
-skinparam defaultFontName Arial
+skinparam linetype ortho
+skinparam packageStyle rectangle
 skinparam backgroundColor #FFFFFF
+skinparam defaultFontSize 12
+skinparam defaultFontName Arial
+
+actor "Administrador" as Admin
+
+rectangle "Sistema de Gestion de Usuarios" as USERS_SYS {
+  usecase "Registrar Usuario" as UC_REGISTRAR
+  usecase "Ingresar Datos Usuario" as UC_INGRESAR_DATOS
+  usecase "Validar Informacion" as UC_VALIDAR
+  usecase "Guardar Usuario" as UC_GUARDAR
+  usecase "Consultar Usuarios" as UC_CONSULTAR
+  usecase "Actualizar Usuario" as UC_ACTUALIZAR
+  usecase "Mostrar Mensaje Error" as UC_ERROR
+  
+  UC_REGISTRAR ..> UC_INGRESAR_DATOS : <<include>>
+  UC_REGISTRAR ..> UC_VALIDAR : <<include>>
+  UC_REGISTRAR ..> UC_GUARDAR : <<include>>
+  UC_VALIDAR --|> UC_ERROR : <<extend>>
+}
+
+Admin --> UC_REGISTRAR
+Admin --> UC_CONSULTAR
+Admin --> UC_ACTUALIZAR
+
+@enduml
+```
+
+---
+
+## Diagrama Detallado: Autenticacion
+
+```plantuml
+@startuml Auth_Detailed
+!theme plain
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontSize 12
+skinparam defaultFontName Arial
 
 actor "Usuario" as User
+actor "Sistema" as System
 
-package "Autenticación" {
-  usecase "UC-AUTH-01\nIniciar Sesión" as UC_LOGIN
-  usecase "UC-AUTH-02\nRegistrarse (Paciente)" as UC_REGISTER
-  usecase "UC-AUTH-03\nCerrar Sesión" as UC_LOGOUT
+rectangle "Autenticacion del Sistema" as AUTH_SYS {
+  usecase "Iniciar Sesion" as UC_LOGIN
+  usecase "Ingresar Credenciales" as UC_INGRCRED
+  usecase "Validar Usuario" as UC_VALUSER
+  usecase "Generar Token JWT" as UC_JWT
+  usecase "Redirigir por Rol" as UC_REDIRECT
+  usecase "Cerrar Sesion" as UC_LOGOUT
+  usecase "Eliminar Token" as UC_DELTOKEN
+  usecase "Mostrar Error Autenticacion" as UC_AUTH_ERROR
+  
+  UC_LOGIN ..> UC_INGRCRED : <<include>>
+  UC_LOGIN ..> UC_VALUSER : <<include>>
+  UC_VALUSER ..> UC_JWT : <<include>>
+  UC_JWT ..> UC_REDIRECT : <<include>>
+  UC_VALUSER --|> UC_AUTH_ERROR : <<extend>>
+  
+  UC_LOGOUT ..> UC_DELTOKEN : <<include>>
 }
 
 User --> UC_LOGIN
-User --> UC_REGISTER
 User --> UC_LOGOUT
-
-UC_LOGIN .-down.> UC_LOGOUT : después de
-
-@enduml
-```
-
-#### B) Casos de Uso - Gestión de Entidades (Administrador)
-
-```plantuml
-@startuml Admin_UseCases_Entities
-!theme plain
-skinparam defaultFontSize 13
-skinparam defaultFontName Arial
-skinparam backgroundColor #FFFFFF
-
-actor "Administrador" as Admin
-
-package "Usuarios" {
-  usecase "Crear Usuario" as UC_USR_C
-  usecase "Listar Usuarios" as UC_USR_R
-  usecase "Actualizar Usuario" as UC_USR_U
-  usecase "Inactivar Usuario" as UC_USR_D
-}
-
-package "Médicos" {
-  usecase "Crear Médico" as UC_MED_C
-  usecase "Listar Médicos" as UC_MED_R
-  usecase "Actualizar Médico" as UC_MED_U
-  usecase "Inactivar Médico" as UC_MED_D
-}
-
-package "Pacientes" {
-  usecase "Crear Paciente" as UC_PAC_C
-  usecase "Listar Pacientes" as UC_PAC_R
-  usecase "Actualizar Paciente" as UC_PAC_U
-  usecase "Inactivar Paciente" as UC_PAC_D
-}
-
-Admin --> UC_USR_C
-Admin --> UC_USR_R
-Admin --> UC_USR_U
-Admin --> UC_USR_D
-
-Admin --> UC_MED_C
-Admin --> UC_MED_R
-Admin --> UC_MED_U
-Admin --> UC_MED_D
-
-Admin --> UC_PAC_C
-Admin --> UC_PAC_R
-Admin --> UC_PAC_U
-Admin --> UC_PAC_D
-
-@enduml
-```
-
-#### C) Casos de Uso - Gestión de Citas
-
-```plantuml
-@startuml Cita_UseCases
-!theme plain
-skinparam defaultFontSize 13
-skinparam defaultFontName Arial
-skinparam backgroundColor #FFFFFF
-
-actor "Administrador" as Admin
-actor "Médico" as Med
-actor "Paciente" as Pac
-
-package "Citas" {
-  usecase "UC-CIT-01\nCrear Cita" as UC_CIT_C
-  usecase "UC-CIT-02\nListar Citas" as UC_CIT_R
-  usecase "UC-CIT-03\nActualizar Estado" as UC_CIT_U
-  usecase "UC-CIT-04\nEliminar Cita" as UC_CIT_D
-}
-
-Admin --> UC_CIT_C
-Admin --> UC_CIT_R
-Admin --> UC_CIT_U
-Admin --> UC_CIT_D
-
-Med --> UC_CIT_R
-Med --> UC_CIT_U
-
-Pac --> UC_CIT_R
 
 @enduml
 ```
 
 ---
 
-## Diagrama de Flujo: Proceso de Autenticación
+## Diagrama Detallado: Gestion de Medicos
 
 ```plantuml
-@startuml Auth_Flow
+@startuml Admin_Medicos_Detailed
 !theme plain
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
 skinparam defaultFontSize 12
+skinparam defaultFontName Arial
+
+actor "Administrador" as Admin
+
+rectangle "Sistema de Gestion de Medicos" as MED_SYS {
+  usecase "Crear Medico" as UC_CREAR
+  usecase "Ingresar Datos Medico" as UC_INGR_DATOS
+  usecase "Validar Cedula Unica" as UC_VAL_CED
+  usecase "Sincronizar Usuario" as UC_SYNC
+  usecase "Guardar Medico" as UC_GUARDAR
+  usecase "Consultar Medicos" as UC_CONSULTAR
+  usecase "Actualizar Especialidad" as UC_ACTUAL
+  usecase "Mostrar Error Cedula" as UC_ERROR_CED
+  usecase "Mostrar Confirmacion" as UC_CONFIRM
+  
+  UC_CREAR ..> UC_INGR_DATOS : <<include>>
+  UC_CREAR ..> UC_VAL_CED : <<include>>
+  UC_CREAR ..> UC_SYNC : <<include>>
+  UC_CREAR ..> UC_GUARDAR : <<include>>
+  UC_VAL_CED --|> UC_ERROR_CED : <<extend>>
+  UC_GUARDAR --|> UC_CONFIRM : <<extend>>
+}
+
+Admin --> UC_CREAR
+Admin --> UC_CONSULTAR
+Admin --> UC_ACTUAL
+
+@enduml
+```
+
+---
+
+## Diagrama Detallado: Gestion de Citas
+
+```plantuml
+@startuml Admin_Citas_Detailed
+!theme plain
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontSize 12
+skinparam defaultFontName Arial
+
+actor "Administrador" as Admin
+actor "Medico" as Med
+
+rectangle "Sistema de Gestion de Citas" as CITA_SYS {
+  usecase "Crear Cita" as UC_CREAR
+  usecase "Seleccionar Medico y Paciente" as UC_SEL_USERS
+  usecase "Validar Disponibilidad" as UC_VAL_DISP
+  usecase "Validar Medico Activo" as UC_VAL_MED
+  usecase "Validar Paciente Activo" as UC_VAL_PAC
+  usecase "Guardar Cita" as UC_GUARDAR
+  usecase "Consultar Citas" as UC_CONSULTAR
+  usecase "Cambiar Estado de Cita" as UC_CAMBIAR_EST
+  usecase "Eliminar Cita" as UC_ELIMINAR
+  usecase "Ver Mi Agenda" as UC_AGENDA
+  usecase "Mostrar Error Validacion" as UC_ERROR
+  
+  UC_CREAR ..> UC_SEL_USERS : <<include>>
+  UC_CREAR ..> UC_VAL_DISP : <<include>>
+  UC_VAL_DISP ..> UC_VAL_MED : <<include>>
+  UC_VAL_DISP ..> UC_VAL_PAC : <<include>>
+  UC_CREAR ..> UC_GUARDAR : <<include>>
+  UC_VAL_DISP --|> UC_ERROR : <<extend>>
+}
+
+Admin --> UC_CREAR
+Admin --> UC_CONSULTAR
+Admin --> UC_CAMBIAR_EST
+Admin --> UC_ELIMINAR
+
+Med --> UC_AGENDA
+Med --> UC_CONSULTAR
+Med --> UC_CAMBIAR_EST
+
+@enduml
+```
+
+---
+
+## Diagrama de Flujo: Proceso de Autenticacion
+
+```plantuml
+@startuml Auth_Flow_Detailed
+!theme plain
+skinparam defaultFontSize 11
 skinparam defaultFontName Arial
 skinparam backgroundColor #FFFFFF
 
 start
-:📌 Usuario accede a login;
-:📝 Ingresa correo y contraseña;
-:🔍 Sistema valida credenciales;
+:Usuario accede a pantalla de login;
+:Ingresa correo y contrasena;
+:Sistema busca usuario en BD;
 
-if (¿Correo existe?) then (NO)
-  :❌ Error 401\nCredenciales inválidas;
+if (Correo existe?) then (NO)
+  :Retorna error 401;
+  :Credenciales invalidas;
   stop
-else (SÍ)
-  if (¿Contraseña correcta?) then (NO)
-    :❌ Error 401\nCredenciales inválidas;
+else (SI)
+  if (Contrasena es correcta?) then (NO)
+    :Retorna error 401;
+    :Credenciales invalidas;
     stop
-  else (SÍ)
-    if (¿Usuario activo?) then (NO)
-      :❌ Error 403\nUsuario inactivo;
+  else (SI)
+    if (Usuario activo?) then (NO)
+      :Retorna error 403;
+      :Usuario inactivo;
       stop
-    else (SÍ)
-      :✅ Genera JWT (8h);
-      :📦 Retorna token + datos;
-      :💾 Frontend almacena token;
-      if (¿Rol Admin?) then (SÍ)
-        :➡️ /dashboard/administrador;
-      else
-        if (¿Rol Médico?) then (SÍ)
-          :➡️ /dashboard/medico;
-        else
-          :➡️ /dashboard/paciente;
+    else (SI)
+      :Genera token JWT;
+      :Validez: 8 horas;
+      :Retorna JWT + datos usuario;
+      :Frontend almacena token;
+      if (Rol es Admin?) then (SI)
+        :Redirige a /dashboard/administrador;
+      else (NO)
+        if (Rol es Medico?) then (SI)
+          :Redirige a /dashboard/medico;
+        else (SI - Paciente)
+          :Redirige a /dashboard/paciente;
         endif
       endif
+      :Pantalla de dashboard activa;
       stop
     endif
   endif
@@ -215,41 +342,63 @@ endif
 
 ---
 
-## Diagrama de Secuencia: Crear Médico en Sistema
+## Diagrama de Secuencia: Crear Medico
 
 ```plantuml
-@startuml Create_Medico_Sequence
+@startuml Create_Medico_Sequence_Detailed
 !theme plain
-skinparam defaultFontSize 12
+skinparam defaultFontSize 11
 skinparam defaultFontName Arial
 skinparam SequenceBoxBackgroundColor #FFFFFF
 skinparam backgroundColor #FFFFFF
 
-participant "👨‍💼 Admin\n(Frontend)" as Admin
-participant "🔗 Backend\nAPI" as Backend
-participant "💾 Base de Datos\n(Prisma)" as Database
+participant "Administrador" as Admin
+participant "Frontend" as FE
+participant "Backend API" as BE
+participant "Base de Datos" as DB
 
-Admin -> Backend: POST /api/v1/medicos\n{nombre, especialidad,\ncedula_profesional, email}
+Admin -> FE: Accede a Gestion Medicos
+FE -> BE: GET /api/v1/medicos (lista actual)
+BE -> DB: SELECT * FROM medicos
+DB --> BE: Lista de medicos activos
+BE --> FE: Retorna medicos con status 200
+FE --> Admin: Muestra tabla de medicos
 
-Backend -> Backend: Validar datos\ninputados
+Admin -> FE: Completa formulario:\nnombre, especialidad, cedula, email
 
-Backend -> Database: Verificar cédula\nno duplicada
-Database --> Backend: ✓ Válida o ✗ Existe
+FE -> FE: Valida campos requeridos
+FE -> BE: POST /api/v1/medicos\n{nombre, especialidad, cedula_profesional, email}
 
-alt Cédula ya existe
-  Backend --> Admin: 400 Bad Request\n{error: "Cédula duplicada"}
-  Admin --> Admin: Mostrar error\nal usuario
-else Cédula válida
-  Backend -> Database: INSERT médicos\n(nombre, especialidad, ...)
-  Database --> Backend: Retorna médico\ncon id
+BE -> BE: Valida estructura datos
+BE -> DB: SELECT FROM medicos\nWHERE cedula_profesional = 'ABC-123'
+DB --> BE: Resultado: vacio
+
+alt Cedula ya existe
+  DB --> BE: Resultado: cedula existe
+  BE --> FE: 400 Bad Request\n{error: "Cedula ya registrada"}
+  FE --> Admin: Muestra error en formulario
+  stop
+else Cedula valida
+  BE -> DB: INSERT INTO medicos\n(nombre, especialidad, cedula, email, activo)
+  DB --> BE: INSERT ejecutado, retorna id_medico
   
   alt Email proporcionado
-    Backend -> Database: Buscar/Crear usuario\nMédico asociado
-    Database --> Backend: Usuario creado/\nactualizado
+    BE -> DB: SELECT FROM usuarios WHERE email = 'medico@email.com'
+    DB --> BE: Usuario no existe o existe
+    
+    alt Usuario no existe
+      BE -> DB: INSERT INTO usuarios\n(nombre, email, password, rol_id, activo)
+      DB --> BE: Usuario creado con rol_id = Medico
+    else Usuario existe
+      BE -> DB: UPDATE usuarios SET activo = true
+      DB --> BE: Usuario actualizado
+    end
   end
   
-  Backend --> Admin: 201 Created\n{id_medico, datos}
-  Admin --> Admin: ✅ Confirmación:\n"Médico registrado"
+  BE --> FE: 201 Created\n{id_medico: 5, nombre, especialidad, cedula}
+  FE --> Admin: Mensaje exitoso: Medico registrado
+  FE -> FE: Limpia formulario
+  FE -> BE: GET /api/v1/medicos (actualiza tabla)
 end
 
 @enduml
@@ -257,26 +406,33 @@ end
 
 ---
 
-## Diagrama de Estados: Ciclo de Vida de una Cita
+## Diagrama de Estados: Ciclo de Vida Cita
 
 ```plantuml
-@startuml Cita_StateMachine
+@startuml Cita_State_Machine_Detailed
 !theme plain
 skinparam defaultFontSize 12
 skinparam defaultFontName Arial
 skinparam backgroundColor #FFFFFF
 
-[*] --> Pendiente: Crear cita\n(Admin)
+state "Crear Cita" as CREATE
+state "Pendiente" as PENDING
+state "Confirmada" as CONFIRMED
+state "Atendida" as ATTENDED
+state "Cancelada" as CANCELLED
 
-Pendiente --> Confirmada: Confirmar\n(Admin)
-Pendiente --> Cancelada: Cancelar\n(Admin)
+[*] --> CREATE: Admin inicia\nforma de cita
+CREATE --> PENDING: Almacena cita\ncon estado Pendiente
 
-Confirmada --> Atendida: Marcar como\natendida\n(Médico)
-Confirmada --> Cancelada: Cancelar\n(Admin/Médico)
+PENDING --> CONFIRMED: Admin confirma\n(cambiar estado)
+PENDING --> CANCELLED: Admin cancela\n(cambiar estado)
 
-Atendida --> [*]: ✅ Completada
+CONFIRMED --> ATTENDED: Medico marca\ncomo atendida
+CONFIRMED --> CANCELLED: Admin/Medico\ncancela cita
 
-Cancelada --> [*]: ❌ Cancelada
+ATTENDED --> [*]: Cita completada\nHistorial registrado
+
+CANCELLED --> [*]: Cita cancelada\nHistorial registrado
 
 @enduml
 ```
@@ -286,179 +442,298 @@ Cancelada --> [*]: ❌ Cancelada
 ## Resumen Visual: Matriz de Casos de Uso por Rol
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                           MEDISYSTEM - CASOS DE USO                            │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  👨‍💼 ADMINISTRADOR                                                               │
-│  ├─ 🔐 Autenticación                                                           │
-│  │  ├─ UC-AUTH-01: Iniciar sesión                                             │
-│  │  └─ UC-AUTH-03: Cerrar sesión                                              │
-│  │                                                                             │
-│  ├─ 👥 Usuarios (CRUD)                                                        │
-│  │  ├─ UC-USR-01: Crear usuario                                               │
-│  │  ├─ UC-USR-02: Listar usuarios                                             │
-│  │  ├─ UC-USR-03: Actualizar usuario                                          │
-│  │  └─ UC-USR-04: Inactivar usuario                                           │
-│  │                                                                             │
-│  ├─ ⚕️  Médicos (CRUD)                                                        │
-│  │  ├─ UC-MED-01: Crear médico                                                │
-│  │  ├─ UC-MED-02: Listar médicos                                              │
-│  │  ├─ UC-MED-03: Actualizar médico                                           │
-│  │  └─ UC-MED-04: Inactivar médico                                            │
-│  │                                                                             │
-│  ├─ 📋 Pacientes (CRUD)                                                       │
-│  │  ├─ UC-PAC-01: Crear paciente                                              │
-│  │  ├─ UC-PAC-02: Listar pacientes                                            │
-│  │  ├─ UC-PAC-03: Actualizar paciente                                         │
-│  │  └─ UC-PAC-04: Inactivar paciente                                          │
-│  │                                                                             │
-│  └─ 📅 Citas (CRUD)                                                           │
-│     ├─ UC-CIT-01: Crear cita                                                  │
-│     ├─ UC-CIT-02: Listar citas                                                │
-│     ├─ UC-CIT-03: Actualizar estado cita                                      │
-│     └─ UC-CIT-04: Eliminar cita                                               │
-│                                                                                 │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  👨‍⚕️  MÉDICO                                                                    │
-│  ├─ 🔐 Autenticación                                                           │
-│  │  ├─ UC-AUTH-01: Iniciar sesión                                             │
-│  │  └─ UC-AUTH-03: Cerrar sesión                                              │
-│  │                                                                             │
-│  ├─ 📅 Citas                                                                  │
-│  │  ├─ UC-CIT-02: Ver mi agenda                                               │
-│  │  └─ UC-CIT-03: Cambiar estado de cita                                      │
-│  │                                                                             │
-│  └─ 📋 Pacientes                                                              │
-│     └─ UC-PAC-02: Consultar directorio                                        │
-│                                                                                 │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  👤 PACIENTE                                                                   │
-│  ├─ 🔐 Autenticación                                                           │
-│  │  ├─ UC-AUTH-02: Registrarse                                                │
-│  │  ├─ UC-AUTH-01: Iniciar sesión                                             │
-│  │  └─ UC-AUTH-03: Cerrar sesión                                              │
-│  │                                                                             │
-│  └─ 📅 Citas                                                                  │
-│     └─ UC-CIT-02: Ver mis citas                                               │
-│                                                                                 │
-└────────────────────────────────────────────────────────────────────────────────┘
+ADMINISTRADOR
+├─ Autenticacion
+│  ├─ UC-AUTH-01: Iniciar Sesion
+│  │  - Valida correo y contrasena
+│  │  - Genera JWT con rol
+│  │  - Redirige a dashboard admin
+│  └─ UC-AUTH-03: Cerrar Sesion
+│
+├─ Usuarios (CRUD)
+│  ├─ UC-USR-01: Crear Usuario
+│  │  - Validar datos requeridos
+│  │  - Validar email unico
+│  │  - Hash contrasena bcrypt
+│  │  - Asignar rol
+│  ├─ UC-USR-02: Consultar Usuarios
+│  │  - Listar con filtros
+│  │  - Paginacion opcional
+│  │  - Ver estado activo/inactivo
+│  ├─ UC-USR-03: Actualizar Usuario
+│  │  - Editar nombre, email, rol
+│  │  - Cambiar estado
+│  └─ UC-USR-04: Inactivar Usuario
+│     - Soft delete (activo = false)
+│
+├─ Medicos (CRUD)
+│  ├─ UC-MED-01: Crear Medico
+│  │  - Ingresar especialidad
+│  │  - Validar cedula unica
+│  │  - Sincronizar con usuarios
+│  │  - Generar cedula automatica si es vacia
+│  ├─ UC-MED-02: Consultar Medicos
+│  │  - Listar con filtros
+│  │  - Ver especialidad, status
+│  ├─ UC-MED-03: Actualizar Medico
+│  │  - Cambiar especialidad, telefono, email
+│  └─ UC-MED-04: Inactivar Medico
+│     - Soft delete (activo = false)
+│
+├─ Pacientes (CRUD)
+│  ├─ UC-PAC-01: Crear Paciente
+│  │  - Datos basicos: nombre, fecha nacimiento
+│  │  - Tipo sangre, alergias (optionales)
+│  │  - Sincronizar con usuarios
+│  ├─ UC-PAC-02: Consultar Pacientes
+│  │  - Listar con filtros
+│  │  - Ver datos basicos
+│  ├─ UC-PAC-03: Actualizar Paciente
+│  │  - Editar todos los campos
+│  └─ UC-PAC-04: Inactivar Paciente
+│     - Soft delete (activo = false)
+│
+├─ Citas (CRUD)
+│  ├─ UC-CIT-01: Crear Cita
+│  │  - Validar medico activo
+│  │  - Validar paciente activo
+│  │  - Verificar disponibilidad
+│  │  - Estado inicial: Pendiente
+│  ├─ UC-CIT-02: Consultar Citas
+│  │  - Filtrar por medico, paciente, fecha
+│  │  - Ver estado de cita
+│  ├─ UC-CIT-03: Actualizar Estado Cita
+│  │  - Transiciones: Pendiente -> Confirmada -> Atendida
+│  │  - Permitir cancelacion
+│  └─ UC-CIT-04: Eliminar Cita
+│     - Hard delete permitido
+│
+└─ Sistema
+   ├─ UC-SYS-01: Sincronizar Sistema
+   │  - Valida usuario-medico
+   │  - Valida usuario-paciente
+   │  - Retorna resumen
+   └─ UC-SYS-02: Health Check
+      - Retorna status 200
+
+MEDICO
+├─ Autenticacion
+│  ├─ UC-AUTH-01: Iniciar Sesion
+│  └─ UC-AUTH-03: Cerrar Sesion
+├─ Citas
+│  ├─ UC-CIT-02: Ver Mi Agenda
+│  │  - Filtrar citas personales
+│  │  - Ordenar por fecha
+│  └─ UC-CIT-03: Cambiar Estado Cita
+│     - Marcar como atendida
+└─ Pacientes
+   └─ UC-PAC-02: Consultar Directorio
+      - Ver informacion basica
+
+PACIENTE
+├─ Autenticacion
+│  ├─ UC-AUTH-02: Registrarse
+│  │  - Nombre, correo, contrasena
+│  │  - Crear usuario patient role
+│  │  - Crear perfil paciente
+│  ├─ UC-AUTH-01: Iniciar Sesion
+│  └─ UC-AUTH-03: Cerrar Sesion
+└─ Citas
+   └─ UC-CIT-02: Ver Mis Citas
+      - Listar citas del paciente
+      - Ver estado y medico
 ```
 
 ---
 
-## Tabla Ejecutiva: Casos de Uso Clave
+## Tabla Ejecutiva: Especificacion de Casos de Uso Clave
 
-| ID | Nombre | Actores | Precondición | Efecto |
-|:---|:-------|:--------|:-------------|:-------|
-| **UC-AUTH-01** | Iniciar sesión | Admin, Médico, Paciente | Ninguna | Genera JWT, redirige por rol |
-| **UC-AUTH-02** | Registrarse | Paciente | Correo único | Crea usuario + paciente |
-| **UC-USR-01** | Crear usuario | Admin | Admin autenticado | Crea usuario con rol asignado |
-| **UC-MED-01** | Crear médico | Admin | Admin autenticado | Crea médico + usuario Médico |
-| **UC-PAC-01** | Crear paciente | Admin | Admin autenticado | Crea paciente + usuario Paciente |
-| **UC-CIT-01** | Crear cita | Admin | Med/Pac activos | Crea cita estado Pendiente |
-| **UC-CIT-03** | Cambiar estado cita | Admin, Médico | Cita existe | Transiciona estado (máquina) |
-
----
-
-## Especificación Detallada de Casos de Uso Clave
-
-### CU-AUTH-01: Iniciar Sesión
-**Actores:** Administrador, Médico, Paciente  
-**Precondiciones:** Usuario registrado en BD y activo.  
-**Flujo principal:**
-1. Actor accede a pantalla de login.
-2. Ingresa correo y contraseña.
-3. Sistema valida contra BD.
-4. Si válido, genera JWT con rol.
-5. Frontend redirige según rol.
-
-**Flujo alternativo:**
-- Credenciales inválidas → Error 401.
-- Usuario inactivo → Error 403.
+| ID | Nombre Caso de Uso | Actor | Precondiciones | Flujo Principal | Resultado |
+|:---|:-------------------|:------|:---------------|:----------------|:----------|
+| UC-AUTH-01 | Iniciar Sesion | Admin, Medico, Paciente | Sistema disponible | 1. Ingresa credenciales<br>2. Valida contra BD<br>3. Genera JWT<br>4. Redirige por rol | Usuario autenticado con token valido |
+| UC-AUTH-02 | Registrarse | Paciente | Email no registrado | 1. Completa formulario<br>2. Valida datos<br>3. Crea usuario<br>4. Crea paciente | Paciente registrado, redirige a login |
+| UC-USR-01 | Crear Usuario | Admin | Admin autenticado | 1. Ingresa datos<br>2. Valida email unico<br>3. Hash contrasena<br>4. Asigna rol<br>5. Guarda en BD | Usuario creado, mostrar confirmacion |
+| UC-MED-01 | Crear Medico | Admin | Admin autenticado | 1. Ingresa datos<br>2. Valida cedula unica<br>3. Sincroniza usuario<br>4. Guarda medico | Medico registrado, usuario sincronizado |
+| UC-PAC-01 | Crear Paciente | Admin | Admin autenticado | 1. Ingresa datos basicos<br>2. Sincroniza usuario<br>3. Guarda paciente | Paciente registrado, usuario sincronizado |
+| UC-CIT-01 | Crear Cita | Admin | Medico y paciente activos | 1. Selecciona medico<br>2. Selecciona paciente<br>3. Valida disponibilidad<br>4. Asigna fecha/hora<br>5. Guarda cita | Cita creada estado Pendiente |
+| UC-CIT-03 | Cambiar Estado Cita | Admin, Medico | Cita existe | Selecciona nuevo estado siguiendo maquina de estados | Cita actualizada, historial registrado |
 
 ---
 
-### CU-AUTH-02: Registrarse (Paciente)
-**Actores:** Paciente  
-**Precondiciones:** Ninguna.  
-**Flujo principal:**
-1. Paciente accede a formulario de registro.
-2. Ingresa nombre, correo, contraseña.
-3. Sistema valida unicidad del correo.
-4. Crea usuario con rol "Paciente".
-5. Crea registro sincronizado en tabla pacientes.
-6. Redirige a login.
+## Especificacion Detallada de Casos de Uso Principales
 
-**Flujo alternativo:**
-- Correo duplicado → Error 400.
+### UC-AUTH-01: Iniciar Sesion
 
----
+**Actor Primario:** Administrador, Medico, Paciente
 
-### CU-USR-01: Crear Usuario
-**Actores:** Administrador  
-**Precondiciones:** Admin autenticado.  
-**Flujo principal:**
-1. Admin accede a módulo "Gestión de Usuarios".
-2. Rellena formulario (nombre, correo, contraseña, rol).
-3. Sistema valida unicidad de correo.
-4. Crea usuario con hash de contraseña.
-5. Si rol es "Médico", sincroniza perfil médico.
-6. Si rol es "Paciente", sincroniza perfil paciente.
-7. Muestra confirmación.
+**Precondiciones:**
+- Sistema disponible
+- Usuario registrado en BD y activo
 
-**Flujo alternativo:**
-- Correo duplicado → Error 400.
+**Flujo Principal:**
+1. Usuario accede a pantalla de login
+2. Ingresa correo electronico y contrasena
+3. Sistema busca usuario por correo en BD
+4. Valida que usuario exista y este activo
+5. Compara contrasena con hash bcrypt almacenado
+6. Si es valida, genera token JWT con validity de 8 horas
+7. Retorna JWT + datos usuario (id, nombre, email, rol)
+8. Frontend almacena token en localStorage/sessionStorage
+9. Frontend redirige segun rol del usuario:
+   - Si rol = "Administrador" -> /dashboard/administrador
+   - Si rol = "Medico" -> /dashboard/medico
+   - Si rol = "Paciente" -> /dashboard/paciente
 
----
+**Flujos Alternativos:**
+- Correo no existe: Retorna error 401 "Credenciales invalidas"
+- Contrasena incorrecta: Retorna error 401 "Credenciales invalidas"
+- Usuario inactivo: Retorna error 403 "Usuario inactivo"
 
-### CU-MED-01: Crear Médico
-**Actores:** Administrador  
-**Precondiciones:** Admin autenticado.  
-**Flujo principal:**
-1. Admin accede a "Plantilla Médica".
-2. Rellena nombre, especialidad, cédula (si no se genera automáticamente).
-3. Opcionalmente ingresa teléfono y correo.
-4. Sistema valida cédula única.
-5. Crea registro médico.
-6. Si correo existe como usuario Médico, vincula.
-7. Si no existe usuario, crea automáticamente.
-8. Muestra confirmación.
-
-**Flujo alternativo:**
-- Cédula duplicada → Error 400.
+**Postcondiciones:**
+- Usuario autenticado y sesion activa
+- Token disponible en cliente para proximas peticiones
 
 ---
 
-### CU-CIT-01: Crear Cita
-**Actores:** Administrador  
-**Precondiciones:** Admin autenticado; médico y paciente activos.  
-**Flujo principal:**
-1. Admin selecciona módulo "Citas".
-2. Completa formulario: médico, paciente, fecha, hora, motivo.
-3. Sistema valida:
-   - Médico activo.
-   - Paciente activo.
-   - No exista cita duplicada (mismo médico, fecha, hora).
-4. Crea cita con estado "Pendiente".
-5. Muestra confirmación con detalles.
+### UC-USR-01: Crear Usuario
 
-**Flujo alternativo:**
-- Médico inactivo → Error de validación.
-- Paciente inactivo → Error de validación.
-- Cita duplicada → Error 400.
+**Actor Primario:** Administrador
+
+**Precondiciones:**
+- Admin autenticado y con permiso
+- Sistema disponible
+
+**Flujo Principal:**
+1. Admin accede a modulo "Gestion de Usuarios"
+2. Selecciona "Crear Usuario"
+3. Completa formulario: nombre, correo, contrasena, rol
+4. Sistema valida campos requeridos
+5. Valida que email sea unico en BD
+6. Aplica hash bcrypt a contrasena (10 rondas minimo)
+7. Crea registro en tabla usuarios
+8. Si rol es "Medico":
+   - Sincroniza creando perfil en tabla medicos
+   - Asigna cedula automatica AUTO-MED-{id_usuario} si es vacia
+9. Si rol es "Paciente":
+   - Sincroniza creando perfil en tabla pacientes
+   - Asigna fecha nacimiento default
+10. Retorna confirmacion: "Usuario creado exitosamente"
+11. Muestra usuario en listado de usuarios
+
+**Flujos Alternativos:**
+- Email ya existe: Retorna error 400 "Correo ya registrado"
+- Campos requeridos vacios: Retorna error 400 con validacion
+- Rol inexistente: Retorna error 400 "Rol no valido"
+
+**Postcondiciones:**
+- Usuario creado y persistido en BD
+- Si aplica, perfil medico/paciente sincronizado
+- Usuario visible en listados correspondientes
+
+---
+
+### UC-MED-01: Crear Medico
+
+**Actor Primario:** Administrador
+
+**Precondiciones:**
+- Admin autenticado
+- Datos del medico disponibles
+
+**Flujo Principal:**
+1. Admin accede a "Plantilla Medica"
+2. Selecciona "Crear Medico"
+3. Ingresa: nombre, especialidad, cedula profesional, telefono (opt), correo (opt)
+4. Sistema valida cedula sea unica
+5. Si cedula esta vacia, genera automaticamente: AUTO-MED-{id_usuario}
+6. Crea registro en tabla medicos
+7. Si se proporciona correo:
+   - Busca usuario existente con ese correo
+   - Si existe y rol="Medico": vincula
+   - Si no existe: crea usuario con rol="Medico" asociado
+8. Retorna confirmacion: "Medico registrado exitosamente"
+9. Actualiza tabla de medicos en frontend
+10. Opcionalmente, ejecuta sincronizacion de perfiles
+
+**Flujos Alternativos:**
+- Cedula ya existe: Retorna error 400 "Cedula ya registrada"
+- Nombre vacio: Retorna error 400 "Nombre requerido"
+- Especialidad vacia: Retorna error 400 "Especialidad requerida"
+
+**Postcondiciones:**
+- Medico creado y persistido
+- Usuario asociado creado/actualizado si aplica
+- Medico disponible para asignacion en citas
+
+---
+
+### UC-CIT-01: Crear Cita
+
+**Actor Primario:** Administrador
+
+**Precondiciones:**
+- Admin autenticado
+- Medico activo existe en BD
+- Paciente activo existe en BD
+- Fecha y hora propuestas son validas
+
+**Flujo Principal:**
+1. Admin accede a modulo "Citas"
+2. Selecciona "Crear Cita"
+3. Completa formulario:
+   - Selecciona medico (dropdown)
+   - Selecciona paciente (dropdown)
+   - Ingresa fecha (date picker)
+   - Ingresa hora (time picker)
+   - Ingresa motivo (texto, opcional)
+4. Sistema valida:
+   - Medico existe y activo=true
+   - Paciente existe y activo=true
+   - No existe otra cita con mismo medico, fecha, hora (avoid duplicados)
+   - Hora es en horario valido (ej: 08:00 - 18:00)
+5. Si validaciones pasan:
+   - Crea registro en tabla citas
+   - Estado inicial: "Pendiente"
+   - fecha_creacion = NOW()
+6. Retorna confirmacion con detalles de cita
+7. Actualiza lista de citas en frontend
+
+**Flujos Alternativos:**
+- Medico inactivo: Error 400 "Medico no disponible"
+- Paciente inactivo: Error 400 "Paciente no disponible"
+- Cita duplicada: Error 400 "Cita con estos parametros ya existe"
+- Hora fuera de rango: Error 400 "Hora invalida"
+
+**Postcondiciones:**
+- Cita creada y persistida
+- Estado inicial = Pendiente
+- Disponible para cambio de estado
+- Visible en agenda del medico y paciente
 
 ---
 
 ## Conclusiones de los Diagramas UML
 
-Los diagramas de casos de uso y flujos presentados formalizan la interacción entre actores (Administrador, Médico, Paciente) y el sistema MediSystem. Cada diagrama:
+Los diagramas de casos de uso presentados formalizan la interaccion entre actores y el sistema MediSystem mediante:
 
-1. **Claridad funcional:** Identifica qué acciones ejecuta cada rol.
-2. **Trazabilidad:** Vincula a requerimientos funcionales específicos.
-3. **Validación:** Permite verificar que la implementación cumple especificaciones.
-4. **Comunicación:** Sirve como referencia visual para stakeholders técnicos y no técnicos.
+1. **Diagramas UML detallados con relaciones:**
+   - Inclusiones (<<include>>): funcionalidades reutilizables
+   - Extensiones (<<extend>>): flujos alternos opcionales
+   - Actores y casos de uso claramente identificados
 
-Con estos diagramas, el equipo de desarrollo cuenta con una especificación visual precisa para la construcción e implementación de la plataforma.
+2. **Especificacion estructurada:**
+   - Precondiciones explicitadas
+   - Flujos principales paso a paso
+   - Flujos alternativos documentados
+   - Postcondiciones verificables
+
+3. **Trazabilidad completa:**
+   - Cada caso de uso vinculado a historias de usuario
+   - Cada caso de uso vinculado a requerimientos funcionales
+   - Diagramas secuenciales y de estados para complejidad adicional
+
+4. **Validacion de implementacion:**
+   - Los casos de uso sirven como base para pruebas
+   - Cada postcondicion es verificable
+   - Los flujos alternativos cubren escenarios error
+
