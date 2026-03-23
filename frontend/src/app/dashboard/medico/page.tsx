@@ -2,7 +2,7 @@
 
 import { ActivitySquare, Users, CalendarHeart, LogOut, Stethoscope, Search, Bell, FileText, Pencil, Eye, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 export default function MedicoDashboardPage() {
@@ -19,6 +19,23 @@ export default function MedicoDashboardPage() {
   const [notas, setNotas] = useState("");
   const [editingExpedienteId, setEditingExpedienteId] = useState<number | null>(null);
   const [pacienteModal, setPacienteModal] = useState<any | null>(null);
+  const [patientSearch, setPatientSearch] = useState("");
+
+  const filteredPacientes = useMemo(() => {
+    const query = patientSearch.trim().toLowerCase();
+    if (!query) {
+      return pacientes;
+    }
+
+    return pacientes.filter((p) => {
+      const searchable = [p.nombre, p.telefono, p.alergias]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
+  }, [pacientes, patientSearch]);
 
   const getAuthHeaders = useCallback(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -253,9 +270,28 @@ export default function MedicoDashboardPage() {
         {activeTab === "pacientes" && (
           <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 animate-in fade-in zoom-in duration-300">
              <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center"><Search className="mr-2" /> Directorio Médico de Pacientes</h2>
+             <div className="mb-6">
+               <label htmlFor="patient-search" className="block text-sm font-semibold text-slate-600 mb-2">
+                 Buscar paciente
+               </label>
+               <div className="relative">
+                 <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                 <input
+                   id="patient-search"
+                   type="text"
+                   value={patientSearch}
+                   onChange={(e) => setPatientSearch(e.target.value)}
+                   placeholder="Nombre, teléfono o alergias"
+                   className="w-full md:max-w-md border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                 />
+               </div>
+               <p className="text-xs text-slate-500 mt-2">
+                 {filteredPacientes.length} resultado{filteredPacientes.length === 1 ? "" : "s"}
+               </p>
+             </div>
              
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pacientes.map((p) => {
+                {filteredPacientes.map((p) => {
                   const expsPaciente = expedientes.filter((e) => e.paciente_id === p.id_paciente);
                   return (
                     <div key={p.id_paciente} className="border border-slate-200 rounded-xl p-6 bg-slate-50 flex flex-col gap-3">
@@ -288,6 +324,13 @@ export default function MedicoDashboardPage() {
                   );
                 })}
              </div>
+
+             {filteredPacientes.length === 0 && (
+               <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                 <p className="text-sm font-semibold text-slate-700">No se encontraron pacientes</p>
+                 <p className="text-xs text-slate-500 mt-1">Intenta con otro nombre, teléfono o palabra clave.</p>
+               </div>
+             )}
           </div>
         )}
 
