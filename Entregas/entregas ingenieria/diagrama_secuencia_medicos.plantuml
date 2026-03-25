@@ -1,0 +1,22 @@
+plantuml
+@startuml
+actor Medico
+participant "Frontend\nDashboard Medico" as FE
+participant "API\nPOST /api/v1/expedientes" as API
+participant "Prisma" as ORM
+database "PostgreSQL" as DB
+
+Medico -> FE : Captura diagnostico/tratamiento
+FE -> API : POST expediente + Bearer token
+API -> API : Verifica JWT y rol=Medico
+API -> ORM : medico.findFirst(email, activo=true)
+ORM -> DB : SELECT medico
+DB --> ORM : medico
+ORM --> API : medico
+API -> ORM : expediente.create(...)
+ORM -> DB : INSERT expediente
+DB --> ORM : expediente creado
+ORM --> API : expediente + relaciones
+API --> FE : 201 Created
+FE --> Medico : Mensaje de exito y recarga tabla
+@enduml

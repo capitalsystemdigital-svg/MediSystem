@@ -1,0 +1,17 @@
+plantuml
+@startuml
+actor Paciente
+participant "Frontend\nDashboard Paciente" as FE
+participant "API\nPOST /api/v1/citas" as API
+participant "Prisma" as ORM
+database "PostgreSQL" as DB
+
+Paciente -> FE : Completa formulario de cita
+FE -> API : POST cita (medico_id, paciente_id, fecha, hora, motivo)
+API -> ORM : cita.create(data)
+ORM -> DB : INSERT cita
+DB --> ORM : cita creada
+ORM --> API : objeto cita
+API --> FE : 200 OK + cita
+FE --> Paciente : Confirmacion de cita registrada
+@enduml

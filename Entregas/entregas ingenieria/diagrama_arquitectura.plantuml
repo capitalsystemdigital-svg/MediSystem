@@ -1,0 +1,32 @@
+plantuml
+@startuml
+!theme plain
+left to right direction
+
+actor Administrador
+actor Medico
+actor Paciente
+
+node "Frontend\nNext.js + React" as FE {
+  component "Login / Register"
+  component "Dashboard Administrador"
+  component "Dashboard Medico"
+  component "Dashboard Paciente"
+}
+
+node "Backend API\nNode.js + Express + TypeScript" as BE {
+  component "AuthController\n/login, /register"
+  component "ApiRoutes\nusuarios, medicos, pacientes, citas, expedientes"
+  component "JWT + bcrypt"
+  component "Prisma Client"
+}
+
+database "PostgreSQL" as DB
+
+Administrador --> FE
+Medico --> FE
+Paciente --> FE
+
+FE --> BE : HTTP/JSON (Axios)
+BE --> DB : Prisma ORM
+@enduml

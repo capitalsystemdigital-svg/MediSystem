@@ -1,0 +1,21 @@
+plantuml
+@startuml
+actor Usuario
+participant "Frontend\n(LoginPage)" as FE
+participant "API Auth\n/auth/login" as API
+participant "Prisma" as ORM
+database "PostgreSQL" as DB
+
+Usuario -> FE : Ingresa email y password
+FE -> API : POST /api/auth/login
+API -> ORM : usuario.findUnique(email, include rol)
+ORM -> DB : SELECT usuario + rol
+DB --> ORM : datos de usuario
+ORM --> API : usuario
+API -> API : bcrypt.compare(password, hash)
+API -> API : jwt.sign(payload, expiresIn=8h)
+API --> FE : token + usuario(rol)
+FE -> FE : Guarda token en localStorage
+FE -> FE : Evalua rol
+FE --> Usuario : Redirige a dashboard por rol
+@enduml

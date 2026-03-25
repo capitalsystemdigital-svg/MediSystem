@@ -1,0 +1,73 @@
+plantuml
+@startuml
+hide methods
+hide stereotypes
+
+class Role {
+  +id_rol: Int
+  +nombre: String
+  +descripcion: String?
+}
+
+class Usuario {
+  +id_usuario: Int
+  +nombre: String
+  +email: String
+  +password: String
+  +rol_id: Int
+  +activo: Boolean
+  +fecha_creacion: DateTime
+}
+
+class Medico {
+  +id_medico: Int
+  +nombre: String
+  +especialidad: String
+  +cedula_profesional: String
+  +telefono: String?
+  +email: String?
+  +activo: Boolean
+}
+
+class Paciente {
+  +id_paciente: Int
+  +usuario_id: Int?
+  +nombre: String
+  +email: String?
+  +fecha_nacimiento: DateTime
+  +telefono: String?
+  +tipo_sangre: String?
+  +alergias: String?
+  +activo: Boolean
+  +fecha_registro: DateTime
+}
+
+class Cita {
+  +id_cita: Int
+  +medico_id: Int
+  +paciente_id: Int
+  +fecha: DateTime
+  +hora: DateTime
+  +estado: String
+  +motivo: String?
+  +fecha_creacion: DateTime
+}
+
+class Expediente {
+  +id_expediente: Int
+  +paciente_id: Int
+  +medico_id: Int
+  +diagnostico: String
+  +tratamiento: String?
+  +notas: String?
+  +fecha_creacion: DateTime
+  +fecha_actualizacion: DateTime
+}
+
+Role "1" -- "*" Usuario
+Usuario "1" -- "0..1" Paciente
+Medico "1" -- "*" Cita
+Paciente "1" -- "*" Cita
+Medico "1" -- "*" Expediente
+Paciente "1" -- "*" Expediente
+@enduml

@@ -1,0 +1,70 @@
+@startuml
+actor Administrador
+participant "Frontend\nDashboard Administrador" as FE
+participant "API\n/api/v1" as API
+participant "Prisma" as ORM
+database "PostgreSQL" as DB
+
+note over Administrador,FE
+El Administrador tiene permisos globales:
+gestiona usuarios, medicos, pacientes,
+citas, expedientes y sincronizacion del sistema.
+end note
+
+Administrador -> FE : Ingresa al panel y selecciona modulo
+
+alt Gestion de Usuarios
+	FE -> API : POST/GET/PUT/DELETE /usuarios
+	API -> ORM : validar email/rol + hash password
+	ORM -> DB : SELECT/INSERT/UPDATE/DELETE usuarios
+	DB --> ORM : resultado
+	ORM --> API : usuario(s) actualizado(s)
+	API --> FE : respuesta de operacion
+	FE --> Administrador : confirmacion de CRUD usuarios
+else Gestion de Medicos
+	FE -> API : POST/GET/PUT/DELETE /medicos
+	API -> ORM : syncMedicoProfiles + reglas de negocio
+	ORM -> DB : operaciones en medicos y citas asociadas
+	DB --> ORM : resultado
+	ORM --> API : medico(s) actualizado(s)
+	API --> FE : respuesta de operacion
+	FE --> Administrador : confirmacion de CRUD medicos
+else Gestion de Pacientes
+	FE -> API : POST/GET/PUT/DELETE /pacientes
+	API -> ORM : validaciones de datos clinicos basicos
+	ORM -> DB : operaciones en pacientes
+	DB --> ORM : resultado
+	ORM --> API : paciente(s) actualizado(s)
+	API --> FE : respuesta de operacion
+	FE --> Administrador : confirmacion de CRUD pacientes
+else Gestion de Citas
+	FE -> API : POST/GET/PUT/DELETE /citas
+	API -> ORM : validar medico_id, paciente_id, estado
+	ORM -> DB : operaciones en citas
+	DB --> ORM : resultado
+	ORM --> API : cita(s) actualizada(s)
+	API --> FE : respuesta de operacion
+	FE --> Administrador : confirmacion de CRUD citas
+else Gestion de Expedientes
+	FE -> API : GET /expedientes
+	API -> ORM : expediente.findMany(include medico, paciente)
+	ORM -> DB : SELECT expedientes
+	DB --> ORM : expediente(s)
+	ORM --> API : expediente(s) + relaciones
+	API --> FE : respuesta de consulta
+	FE --> Administrador : visualizacion de expedientes
+else Sincronizacion General
+	FE -> API : POST /system-sync
+	API -> ORM : syncMedicoProfiles + conteos globales
+	ORM -> DB : UPDATE + COUNT usuarios/medicos/citas
+	DB --> ORM : resumen sincronizado
+	ORM --> API : resumen
+	API --> FE : estado del sistema
+	FE --> Administrador : confirmacion de sincronizacion
+end
+
+note over Administrador,API
+Resultado: el Admin opera sobre todo el sistema
+con control transversal de catalogos y procesos.
+end note
+@enduml
