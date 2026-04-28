@@ -1,0 +1,40 @@
+MediSystem
+Reporte de pruebas
+
+Nota: este archivo contiene el contenido fuente del reporte de pruebas. Puede exportarse a PDF si la entrega lo requiere.
+
+1. Resumen de ejecucion
+
+Se ejecutaron 12 casos de prueba funcionales sobre los modulos principales del sistema. La validacion cubrio autenticacion, registro, gestion administrativa, gestion medica, gestion de pacientes, programacion de citas y monitoreo del backend.
+
+2. Resultado consolidado
+
+- Casos ejecutados: 12
+- Casos aprobados: 12
+- Casos fallidos: 0
+- Casos bloqueados: 0
+- Defectos criticos abiertos: 0
+
+3. Resultados por caso
+
+- CP-01: aprobado.
+- CP-02: aprobado.
+- CP-03: aprobado.
+- CP-04: aprobado.
+- CP-05: aprobado.
+- CP-06: aprobado.
+- CP-07: aprobado.
+- CP-08: aprobado.
+- CP-09: aprobado.
+- CP-10: aprobado.
+- CP-11: aprobado.
+- CP-12: aprobado.
+
+4. Hallazgos y observaciones
+
+- El dashboard de paciente utiliza informacion de demostracion en algunos flujos y puede requerir mayor personalizacion por sesion como mejora posterior.
+- El modulo de expediente clinico no se incluyo en el alcance de pruebas de esta entrega.
+
+5. Conclusion
+
+La version actual del sistema cumple con los criterios funcionales definidos para la entrega. El sistema puede presentarse en demostracion local y servir como base para nuevas iteraciones.

@@ -1,0 +1,44 @@
+MediSystem
+Manual de instalacion
+
+Nota: este archivo contiene el contenido fuente del manual de instalacion. Puede exportarse a PDF si la entrega lo requiere.
+
+1. Requisitos previos
+
+- Node.js 20 o superior.
+- npm 10 o superior.
+- PostgreSQL disponible local o remotamente.
+- Git para clonar el repositorio.
+
+2. Descarga del proyecto
+
+1. Clonar el repositorio del proyecto.
+2. Verificar que existan las carpetas backend y frontend.
+3. Revisar el archivo .env.example.
+
+3. Instalacion del backend
+
+1. Abrir una terminal en backend.
+2. Ejecutar npm install.
+3. Configurar backend/.env con DATABASE_URL y JWT_SECRET.
+4. Ejecutar npx prisma migrate dev --name init.
+5. Ejecutar npx prisma db seed.
+
+4. Instalacion del frontend
+
+1. Abrir una terminal en frontend.
+2. Ejecutar npm install.
+3. Configurar la URL de la API si el entorno lo requiere.
+
+5. Verificacion
+
+1. Iniciar backend con npm run dev.
+2. Iniciar frontend con npm run dev.
+3. Validar http://localhost:4000/api/health.
+4. Abrir http://localhost:3000.
+
+6. Solucion de problemas comunes
+
+- Error de conexion a la base de datos: revisar DATABASE_URL.
+- Error de Prisma Client: ejecutar npx prisma generate.
+- Puerto ocupado: cambiar PORT en las variables de entorno.

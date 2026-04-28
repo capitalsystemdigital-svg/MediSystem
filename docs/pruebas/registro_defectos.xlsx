@@ -1,0 +1,3 @@
+ID,Fecha,Modulo,Severidad,Descripcion,Estado,Responsable,Observaciones
+DEF-001,2026-03-13,Paciente,Baja,El panel de paciente usa un identificador fijo en entorno de demostracion,Cerrado,Frontend,Se documenta como mejora no bloqueante para personalizacion por sesion
+DEF-002,2026-03-13,Expediente,Media,El expediente clinico completo no forma parte del alcance de esta entrega,Cerrado,Producto,Se clasifica como fuera de alcance y no como falla de implementacion

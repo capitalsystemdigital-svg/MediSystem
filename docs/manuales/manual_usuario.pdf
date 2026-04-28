@@ -1,0 +1,42 @@
+MediSystem
+Manual de usuario
+
+Nota: este archivo contiene el contenido fuente del manual de usuario. Puede exportarse a PDF si la entrega lo requiere.
+
+1. Ingreso al sistema
+
+1. Abrir la aplicacion web en el navegador.
+2. Capturar correo y contrasena.
+3. Presionar Iniciar sesion.
+4. El sistema redirige al dashboard correspondiente segun el rol.
+
+2. Funciones del Administrador
+
+- Consultar indicadores generales del sistema.
+- Gestionar usuarios y roles.
+- Crear, editar y eliminar medicos.
+- Crear, editar y eliminar pacientes.
+- Programar y actualizar citas.
+
+3. Funciones del Medico
+
+- Consultar agenda de citas.
+- Revisar datos basicos de pacientes asignados.
+
+4. Funciones del Paciente
+
+- Registrarse en la plataforma.
+- Iniciar sesion con su cuenta.
+- Solicitar nueva cita.
+- Consultar sus citas registradas.
+
+5. Recomendaciones de uso
+
+- Mantener la sesion cerrada al terminar en equipos compartidos.
+- Verificar que los datos de contacto sean correctos antes de guardar.
+- Notificar al administrador si se detectan inconsistencias.
+
+6. Limitaciones actuales
+
+- El expediente clinico detallado no forma parte del alcance de esta entrega.
+- Algunas pantallas de demostracion pueden requerir ajustes para escenarios multiusuario completos.

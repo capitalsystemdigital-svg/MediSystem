@@ -1,0 +1,63 @@
+MediSystem
+Documento de arquitectura final
+
+Nota: este archivo contiene el contenido fuente de la arquitectura final. Puede exportarse a PDF formal si la entrega requiere un binario real.
+
+1. Resumen ejecutivo
+
+MediSystem implementa una arquitectura web desacoplada para administrar autenticacion, usuarios, medicos, pacientes y citas. La solucion adopta tres capas: presentacion, aplicacion y datos.
+
+2. Arquitectura propuesta
+
+- Capa de presentacion: Next.js con App Router para login, registro y dashboards por rol.
+- Capa de aplicacion: Node.js con Express y TypeScript para autenticacion y modulos de negocio.
+- Capa de datos: PostgreSQL con Prisma ORM como capa de persistencia.
+
+3. Componentes principales
+
+- Frontend:
+  - Pagina de inicio.
+  - Registro de pacientes.
+  - Dashboard de administrador.
+  - Dashboard de medico.
+  - Dashboard de paciente.
+- Backend:
+  - Rutas de autenticacion en /api/auth.
+  - Rutas de dominio en /api/v1.
+  - Healthcheck en /api/health.
+  - Middleware de seguridad con helmet y cors.
+- Base de datos:
+  - Role.
+  - Usuario.
+  - Medico.
+  - Paciente.
+  - Cita.
+  - Expediente.
+
+4. Flujo general
+
+1. El usuario accede al frontend desde el navegador.
+2. El frontend consume la API REST mediante HTTP/JSON.
+3. El backend valida reglas de negocio y autenticacion JWT.
+4. Prisma ejecuta operaciones sobre PostgreSQL.
+5. El resultado vuelve al frontend y se presenta segun el rol del usuario.
+
+5. Decisiones tecnicas
+
+- Se separa frontend de backend para facilitar mantenimiento y despliegue.
+- Se utiliza Prisma para reducir complejidad de acceso a datos.
+- Se usa JWT para sesiones stateless.
+- Se organizan dashboards por rol para mejorar usabilidad y control de acceso.
+
+6. Riesgos y mitigaciones
+
+- Riesgo: configuracion insegura de secretos.
+  Mitigacion: usar .env por ambiente y gestor de secretos en produccion.
+- Riesgo: CORS abierto en despliegue productivo.
+  Mitigacion: restringir dominios permitidos.
+- Riesgo: falta de trazabilidad de errores.
+  Mitigacion: integrar logging centralizado y monitoreo.
+
+7. Conclusiones
+
+La arquitectura actual soporta la operacion academica del sistema y deja una base adecuada para evolucionar modulos clinicos adicionales sin reestructurar la aplicacion completa.

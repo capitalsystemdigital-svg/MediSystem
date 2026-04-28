@@ -1,0 +1,45 @@
+MediSystem
+Manual de despliegue
+
+Nota: este archivo contiene el contenido fuente del manual de despliegue. Puede exportarse a PDF si la entrega lo requiere.
+
+1. Objetivo
+
+Describir el procedimiento para desplegar MediSystem en un entorno controlado de desarrollo, pruebas o produccion academica.
+
+2. Preparacion del entorno
+
+- Provisionar servidor o maquina con Node.js y acceso a PostgreSQL.
+- Configurar variables de entorno seguras.
+- Habilitar acceso de red solo a los puertos necesarios.
+
+3. Despliegue del backend
+
+1. Instalar dependencias con npm install.
+2. Configurar variables de entorno.
+3. Ejecutar migraciones de base de datos.
+4. Generar cliente Prisma si aplica.
+5. Iniciar servicio con npm run start o un process manager.
+
+4. Despliegue del frontend
+
+1. Instalar dependencias con npm install.
+2. Ejecutar npm run build.
+3. Levantar aplicacion con npm run start.
+4. Configurar proxy reverso o dominio si se publica externamente.
+
+5. Recomendaciones de seguridad
+
+- Restringir CORS a dominios conocidos.
+- Utilizar HTTPS en frontend y backend.
+- Cambiar JWT_SECRET por un valor robusto.
+- Separar configuracion por ambiente.
+- Implementar respaldo de base de datos.
+
+6. Checklist post-despliegue
+
+- Healthcheck operativo.
+- Login por rol funcional.
+- Conexion frontend-backend estable.
+- Logs sin errores criticos.
+- Base de datos accesible y consistente.

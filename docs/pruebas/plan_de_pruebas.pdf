@@ -1,0 +1,66 @@
+MediSystem
+Plan de pruebas
+
+Nota: este archivo contiene el contenido fuente del plan de pruebas. Puede exportarse a PDF si la entrega lo requiere.
+
+1. Objetivo
+
+Validar el funcionamiento de los modulos criticos del sistema MediSystem en frontend, backend y persistencia, verificando autenticacion, registro, administracion de usuarios, gestion de medicos, pacientes y citas.
+
+2. Alcance
+
+Incluye:
+- Login y registro.
+- Gestion de usuarios por administrador.
+- Gestion de medicos.
+- Gestion de pacientes.
+- Gestion de citas.
+- Endpoint de sincronizacion.
+- Endpoint de salud.
+
+Excluye:
+- Modulo detallado de expediente clinico.
+- Pruebas de carga a gran escala.
+- Integraciones externas no implementadas.
+
+3. Ambiente de pruebas
+
+- Frontend: Next.js en http://localhost:3000.
+- Backend: Express en http://localhost:4000.
+- Base de datos: PostgreSQL.
+- ORM: Prisma.
+- Navegadores recomendados: Chrome y Edge.
+
+4. Tipos de prueba
+
+- Pruebas funcionales manuales.
+- Pruebas de API sobre endpoints principales.
+- Pruebas de humo posteriores al despliegue local.
+
+5. Criterios de entrada
+
+- Dependencias instaladas en backend y frontend.
+- Base de datos accesible mediante DATABASE_URL.
+- Migraciones y seed ejecutados correctamente.
+- Variables de entorno configuradas.
+
+6. Criterios de salida
+
+- Casos criticos aprobados.
+- Sin defectos bloqueantes abiertos.
+- Flujo de login y navegacion por rol estable.
+
+7. Casos prioritarios
+
+- CP-01: login de administrador.
+- CP-03: registro de paciente.
+- CP-05: alta de usuario.
+- CP-07: alta de medico.
+- CP-09: programacion de cita.
+- CP-12: healthcheck del backend.
+
+8. Roles y responsabilidades
+
+- Responsable de pruebas: equipo de desarrollo.
+- Responsable de correccion: equipo backend/frontend segun el modulo.
+- Responsable de evidencia: documentacion de entrega.

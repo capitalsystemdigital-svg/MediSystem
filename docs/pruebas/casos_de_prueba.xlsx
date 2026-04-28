@@ -1,0 +1,13 @@
+ID,Modulo,Descripcion,Precondiciones,Resultado esperado,Prioridad
+CP-01,Autenticacion,Iniciar sesion con credenciales validas de Administrador,Usuario administrador existente,Retorna token JWT y redirige al dashboard de administrador,Alta
+CP-02,Autenticacion,Iniciar sesion con contrasena incorrecta,Usuario existente,Responde 401 y muestra credenciales invalidas,Alta
+CP-03,Registro,Registrar nueva cuenta de paciente con correo no existente,Correo sin registrar,Retorna 201 y confirma alta exitosa,Alta
+CP-04,Registro,Registrar cuenta con correo ya existente,Correo previamente registrado,Responde 400 y evita duplicidad,Alta
+CP-05,Usuarios,Crear usuario nuevo desde panel administrador,Administrador autenticado,Usuario persistido y visible en listado,Alta
+CP-06,Usuarios,Actualizar usuario existente,Administrador autenticado,Datos actualizados correctamente,Media
+CP-07,Medicos,Crear medico con cedula y correo validos,Administrador autenticado,Perfil medico creado con exito,Alta
+CP-08,Medicos,Eliminar medico con citas asociadas,Existencia de medico y citas relacionadas,Se eliminan citas y luego el medico,Media
+CP-09,Citas,Programar cita con medico y paciente validos,Administrador autenticado y catalogos cargados,Cita creada con estado inicial,Alta
+CP-10,Citas,Editar cita para cambiar estado y motivo,Cita existente,La cita actualiza sus campos sin errores,Media
+CP-11,Sincronizacion,Ejecutar endpoint de sincronizacion,Sistema activo,Retorna ok=true y resumen del sistema,Media
+CP-12,Monitoreo,Consultar healthcheck del backend,Servidor backend levantado,Responde 200 con mensaje de servicio activo,Alta
