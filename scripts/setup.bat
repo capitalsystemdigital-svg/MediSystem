@@ -1,23 +1,27 @@
 @echo off
-setlocal
+echo ========================================================
+echo        MediSystem - Setup Environment (Windows)
+echo ========================================================
+echo.
 
-set ROOT_DIR=%~dp0..\
-
-echo Instalando dependencias del backend...
-pushd "%ROOT_DIR%backend"
+cd backend
+echo [*] Instalando dependencias del Backend...
 call npm install
-if errorlevel 1 goto :error
-popd
 
-echo Instalando dependencias del frontend...
-pushd "%ROOT_DIR%frontend"
-call npm install
-if errorlevel 1 goto :error
-popd
+echo [*] Configurando variables de entorno (.env)...
+if not exist .env (
+    copy .env.example .env
+    echo [OK] Archivo .env creado. Por favor, edita tu cadena de conexion a MySQL.
+) else (
+    echo [!] El archivo .env ya existe. Omitiendo.
+)
 
-echo Setup completado. Configure backend\.env a partir de .env.example y ejecute las migraciones de Prisma.
-goto :eof
+echo [*] Generando cliente de Prisma...
+call npx prisma generate
 
-:error
-echo Ocurrio un error durante la instalacion.
-exit /b 1
+echo.
+echo ========================================================
+echo    Setup completado. Para iniciar, ejecuta:
+echo    cd backend ^&^& npm run dev
+echo ========================================================
+pause

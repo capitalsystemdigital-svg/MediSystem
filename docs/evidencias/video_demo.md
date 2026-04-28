@@ -1,29 +1,18 @@
-# Video demo de MediSystem
+# Evidencia de Funcionamiento: Video Demo
 
-## Objetivo del video
+En este documento se proporciona el enlace a la demostración en video del funcionamiento integral de MediSystem (Entregas V, VI y VII).
 
-Mostrar el flujo completo del sistema en ejecucion, cubriendo autenticacion, navegacion por roles y operaciones clave del proyecto.
+## Enlaces
+* **Video en YouTube/Drive:** [Enlace al Video (Insertar aquí)]
+* **Repositorio GitHub:** [https://github.com/Rodolfo11R/cortizac](https://github.com/Rodolfo11R/cortizac)
 
-## Guion recomendado
+## Puntos Demostrados en el Video
+1. **Frontend:** Autenticación e interfaz de usuario de Recepcionista y Doctor.
+2. **Backend (API):** Consumo de la API a través de Swagger.
+3. **Regla de Negocio (1:3):** Demostración en vivo de cómo el sistema marca la 4ta cita como gratuita.
+4. **Pruebas Automatizadas:** Ejecución del comando `npm test` demostrando la cobertura y pase de las pruebas unitarias y de integración.
+5. **Base de Datos:** Verificación de inserción y correcta asociación de registros en MySQL mediante Prisma ORM.
 
-1. Presentar la estructura general del repositorio.
-2. Mostrar el backend levantado y el endpoint de salud respondiendo correctamente.
-3. Mostrar el frontend en ejecucion.
-4. Iniciar sesion como Administrador y recorrer gestion de usuarios, medicos, pacientes y citas.
-5. Iniciar sesion como Medico y mostrar la agenda.
-6. Iniciar sesion como Paciente y mostrar registro o solicitud de cita.
-7. Cerrar con una vista de la base de datos o una evidencia de persistencia.
-
-## Formato sugerido
-
-- Duracion: 5 a 8 minutos.
-- Resolucion: 720p o superior.
-- Audio: narracion breve explicando cada modulo.
-
-## Enlace de entrega
-
-Agregar aqui el enlace final al video cuando se publique:
-
-- URL del video: pendiente
-- Fecha de grabacion: pendiente
-- Responsable: pendiente
+---
+*Autor: José Francisco de la Rosa Ibarra / Rodolfo*
+*Fecha: Abril 2026*

@@ -1,14 +1,27 @@
 #!/bin/bash
-set -e
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+echo "========================================================"
+echo "       MediSystem - Setup Environment (Mac/Linux)       "
+echo "========================================================"
+echo ""
 
-echo "Instalando dependencias del backend..."
-cd "$ROOT_DIR/backend"
+cd backend || exit
+echo "[*] Instalando dependencias del Backend..."
 npm install
 
-echo "Instalando dependencias del frontend..."
-cd "$ROOT_DIR/frontend"
-npm install
+echo "[*] Configurando variables de entorno (.env)..."
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo "[OK] Archivo .env creado. Por favor, edita tu cadena de conexion a MySQL en backend/.env"
+else
+    echo "[!] El archivo .env ya existe. Omitiendo."
+fi
 
-echo "Setup completado. Configure backend/.env a partir de .env.example y luego ejecute las migraciones de Prisma."
+echo "[*] Generando cliente de Prisma..."
+npx prisma generate
+
+echo ""
+echo "========================================================"
+echo "    Setup completado. Para iniciar, ejecuta:"
+echo "    cd backend && npm run dev"
+echo "========================================================"
